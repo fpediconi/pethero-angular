@@ -1,0 +1,49 @@
+{
+  "guardians": [
+    {
+      "id": "g1",
+      "bio": "Amo los animales. Patio grande.",
+      "pricePerNight": 8000,
+      "acceptedTypes": [
+        "DOG",
+        "CAT"
+      ],
+      "acceptedSizes": [
+        "SMALL",
+        "MEDIUM"
+      ],
+      "ratingAvg": 4.7,
+      "ratingCount": 23,
+      "city": "Mar del Plata"
+    },
+    {
+      "id": "g2",
+      "bio": "Experto en felinos.",
+      "pricePerNight": 6500,
+      "acceptedTypes": [
+        "CAT"
+      ],
+      "acceptedSizes": [
+        "SMALL",
+        "MEDIUM",
+        "LARGE"
+      ],
+      "ratingAvg": 4.9,
+      "ratingCount": 12,
+      "city": "Mar del Plata"
+    }
+  ],
+  "pets": [
+    {
+      "id": "pet1",
+      "ownerId": "u1",
+      "name": "Luna",
+      "type": "DOG",
+      "size": "MEDIUM"
+    }
+  ],
+  "bookings": [],
+  "messages": [],
+  "reviews": [],
+  "payments": []
+}

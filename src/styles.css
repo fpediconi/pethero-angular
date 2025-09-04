@@ -1,0 +1,12 @@
+:root{ --brand:#0fa3b1; --ink:#213547; --bg:#f7fbfc }
+*{ box-sizing:border-box }
+body{ margin:0; font-family:system-ui,Segoe UI,Roboto; background:var(--bg); color:var(--ink) }
+nav{ display:flex; gap:12px; align-items:center; padding:10px 16px; background:#fff; border-bottom:1px solid #e9eef2 }
+nav .spacer{ flex:1 }
+.container{ max-width:1080px; margin:24px auto; padding:0 16px }
+.card{ background:#fff; border:1px solid #e4eaef; border-radius:12px; padding:16px }
+input,select,button{ font:inherit; padding:8px 10px; border:1px solid #cbd5df; border-radius:8px }
+button{ background:var(--brand); color:#fff; border:none; cursor:pointer }
+.table{ width:100%; border-collapse:collapse } .table td,.table th{ padding:8px; border-bottom:1px solid #eef2f5 }
+.badge{ background:#eef7f9; color:#0b6570; padding:2px 8px; border-radius:999px; font-size:.8rem }
+.error{ color:#b00020 }

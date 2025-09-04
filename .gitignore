@@ -1,0 +1,32 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Angular build
+.angular/
+dist/
+tmp/
+out-tsc/
+
+# IDEs y configuración local
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de logs
+*.log
+
+# Archivos de coverage (tests)
+coverage/
+
+# Archivos de environment (si contienen claves privadas)
+src/environments/*.ts
