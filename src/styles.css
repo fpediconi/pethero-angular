@@ -1,8 +1,8 @@
 :root{ --brand:#0fa3b1; --ink:#213547; --bg:#f7fbfc }
 *{ box-sizing:border-box }
 body{ margin:0; font-family:system-ui,Segoe UI,Roboto; background:var(--bg); color:var(--ink) }
-nav{ display:flex; gap:12px; align-items:center; padding:10px 16px; background:#fff; border-bottom:1px solid #e9eef2 }
-nav .spacer{ flex:1 }
+/* Legacy generic nav reset kept minimal; component styles override below */
+nav{ background:#fff }
 .container{ max-width:1080px; margin:24px auto; padding:0 16px }
 .card{ background:#fff; border:1px solid #e4eaef; border-radius:12px; padding:16px }
 input,select,button{ font:inherit; padding:8px 10px; border:1px solid #cbd5df; border-radius:8px }
@@ -10,3 +10,39 @@ button{ background:var(--brand); color:#fff; border:none; cursor:pointer }
 .table{ width:100%; border-collapse:collapse } .table td,.table th{ padding:8px; border-bottom:1px solid #eef2f5 }
 .badge{ background:#eef7f9; color:#0b6570; padding:2px 8px; border-radius:999px; font-size:.8rem }
 .error{ color:#b00020 }
+
+/* Polished top navbar */
+.site-header{ position:sticky; top:0; z-index:100; background:#fff; border-bottom:1px solid #e9eef2 }
+.nav{ display:flex; align-items:center; gap:16px; padding:10px 16px; max-width:1200px; margin:0 auto }
+.brand{ display:flex; align-items:center }
+.brand-link{ display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink) }
+.logo{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg, var(--brand), #79d1d9); box-shadow:0 1px 2px rgba(0,0,0,.06) }
+.brand-name{ font-weight:700; letter-spacing:.2px }
+
+.hamburger{ margin-left:auto; display:none; width:42px; height:36px; padding:0 10px; border:1px solid #e6ecf1; background:#fff; border-radius:8px }
+.hamburger span{ display:block; height:2px; background:#334155; margin:6px 0 }
+
+.links{ display:flex; align-items:center; gap:14px; margin-left:12px }
+.links a{ color:#475569; text-decoration:none; padding:8px 10px; border-radius:8px }
+.links a.active{ background:#eef7f9; color:#0b6570 }
+.links a:hover{ background:#f3f7fa }
+
+.actions{ display:flex; align-items:center; gap:10px; margin-left:auto }
+.btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; text-decoration:none }
+
+.user{ position:relative }
+.user-btn{ display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid #e6ecf1; background:#fff; color:#334155; border-radius:999px; cursor:pointer }
+.user-btn .chevron{ opacity:.7 }
+.avatar{ width:28px; height:28px; border-radius:50%; background:#e6f6f8; color:#0b6570; display:inline-flex; align-items:center; justify-content:center; font-weight:600 }
+.user-name{ max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.dropdown{ position:absolute; right:0; top:calc(100% + 8px); min-width:180px; background:#fff; border:1px solid #e6ecf1; border-radius:12px; padding:6px; box-shadow:0 8px 24px rgba(0,0,0,.08) }
+.dropdown a,.dropdown .linklike{ display:block; width:100%; text-align:left; padding:8px 10px; border-radius:8px; color:#334155; text-decoration:none; background:none; border:none; cursor:pointer }
+.dropdown a:hover,.dropdown .linklike:hover{ background:#f3f7fa }
+
+/* Responsive */
+@media (max-width: 768px){
+  .hamburger{ display:inline-block }
+  .links{ display:none; position:absolute; left:0; right:0; top:56px; background:#fff; border-bottom:1px solid #e9eef2; padding:10px 16px }
+  .links.open{ display:flex; flex-direction:column; gap:6px }
+  .actions{ margin-left:0 }
+}

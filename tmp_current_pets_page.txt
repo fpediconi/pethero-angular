@@ -1,0 +1,197 @@
+import { Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { PetsService } from './pets.service';
+import { Pet, PetSize, PetType } from '../../shared/models/pet';
+import { AuthService } from '../../auth/auth.service';
+import { AvatarComponent } from '../../shared/ui/avatar.component';
+
+@Component({
+  selector: 'ph-pets',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, AvatarComponent],
+  template: `
+  <div class="wrap">
+    <div class="card">
+      <div class="card-header">
+        <h2>Mis Mascotas</h2>
+        <span class="muted">Gestioná tus mascotas: crear, ver y eliminar</span>
+      </div>
+
+      <div class="grid">
+        <form [formGroup]="form" (ngSubmit)="create()" class="pet-form">
+          <h3>Agregar Mascota</h3>
+          <label>
+            <span>Nombre</span>
+            <input formControlName="name" placeholder="Ej: Luna" />
+          </label>
+
+          <label>
+            <span>Tipo</span>
+            <select formControlName="type">
+              <option value="DOG">Perro</option>
+              <option value="CAT">Gato</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Tamaño</span>
+            <select formControlName="size">
+              <option value="SMALL">Pequeño</option>
+              <option value="MEDIUM">Mediano</option>
+              <option value="LARGE">Grande</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Raza (opcional)</span>
+            <input formControlName="breed" placeholder="Ej: Mestizo" />
+          </label>
+
+          <label>
+            <span>Calendario de vacunas (URL)</span>
+            <input formControlName="vaccineCalendarUrl" placeholder="https://..." />
+          </label>
+
+          <label>
+            <span>Foto</span>
+            <input type="file" accept="image/*" (change)="onFileSelected($event)" />
+          </label>
+
+          <label class="notes">
+            <span>Descripción / Bio</span>
+            <textarea formControlName="notes" rows="3" placeholder="Contanos sobre tu mascota"></textarea>
+          </label>
+
+          <button class="primary" [disabled]="form.invalid || creating">{{ creating ? 'Guardando…' : 'Agregar' }}</button>
+        </form>
+
+        <div class="list">
+          <div *ngIf="pets().length === 0" class="empty">
+            Aún no cargaste mascotas. ¡Agregá la primera!
+          </div>
+          <div class="pet-card" *ngFor="let p of pets()">
+            <div class="pet-head">
+              <app-avatar [src]="p.photoUrl" [name]="p.name" size="md"></app-avatar>
+              <div class="meta">
+                <div class="title">{{ p.name }}</div>
+                <div class="chips">
+                  <span class="chip type">{{ mapType(p.type) }}</span>
+                  <span class="chip size">{{ mapSize(p.size) }}</span>
+                </div>
+              </div>
+              <button class="danger ghost" (click)="remove(p)" title="Eliminar">Eliminar</button>
+            </div>
+            <div class="pet-body">
+              <div *ngIf="p.breed" class="row"><span class="lbl">Raza:</span> <span>{{ p.breed }}</span></div>
+              <div *ngIf="p.notes" class="row"><span class="lbl">Bio:</span> <span class="truncate">{{ p.notes }}</span></div>
+              <div *ngIf="p.vaccineCalendarUrl" class="row"><span class="lbl">Vacunas:</span> <a [href]="p.vaccineCalendarUrl" target="_blank" rel="noopener">Ver calendario</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  `,
+  styles: [`
+    .wrap{ padding:16px; }
+    .card{ background:#fff; border:1px solid #e6e6e6; border-radius:12px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.05) }
+    .card-header{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px }
+    .card h2{ margin:0 }
+    .muted{ color:#6b7280; font-size:.9rem }
+    .grid{ display:grid; grid-template-columns: 360px 1fr; gap:16px }
+    .pet-form{ display:grid; gap:10px }
+    label{ display:grid; gap:6px; font-weight:600; color:#374151 }
+    input, select, textarea{ padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font: inherit }
+    input:focus, select:focus, textarea:focus{ outline:2px solid #0ea5e9; border-color:#0ea5e9 }
+    .notes textarea{ resize: vertical }
+    button{ cursor:pointer; padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; background:#f9fafb }
+    .primary{ background:#0ea5e9; border-color:#0ea5e9; color:#fff; font-weight:600 }
+    .danger{ background:#fee2e2; border-color:#fecaca; color:#b91c1c }
+    .ghost{ background:transparent }
+    .list{ display:grid; gap:12px }
+    .empty{ color:#6b7280; padding:16px; border:1px dashed #d1d5db; border-radius:8px; text-align:center }
+    .pet-card{ border:1px solid #e5e7eb; border-radius:12px; padding:12px; display:grid; gap:8px }
+    .pet-head{ display:flex; align-items:center; gap:12px }
+    .meta{ flex:1 }
+    .title{ font-weight:700; font-size:1.05rem }
+    .chips{ display:flex; gap:6px; margin-top:4px }
+    .chip{ padding:2px 8px; border-radius:999px; font-size:.8rem; border:1px solid #e5e7eb; color:#374151 }
+    .chip.type{ background:#ecfeff; border-color:#a5f3fc; color:#0369a1 }
+    .chip.size{ background:#f5f3ff; border-color:#ddd6fe; color:#4c1d95 }
+    .pet-body{ display:grid; gap:6px }
+    .row{ display:flex; gap:8px; align-items:baseline }
+    .lbl{ color:#6b7280; font-size:.9rem }
+    .truncate{ overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical }
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr } }
+  `]
+})
+export class PetsPage {
+  private service = inject(PetsService);
+  private fb = inject(FormBuilder);
+  private auth = inject(AuthService);
+
+  pets = signal<Pet[]>([]);
+  creating = false;
+
+  form = this.fb.group({
+    name: ['', [Validators.required, Validators.maxLength(60)]],
+    type: ['DOG' as PetType, Validators.required],
+    size: ['MEDIUM' as PetSize, Validators.required],
+    breed: [''],
+    vaccineCalendarUrl: [''],
+    notes: [''],
+    photoUrl: ['']
+  });
+
+  ownerKey = computed(() => {
+    const u = this.auth.user();
+    // En el mock, ownerId es una string tipo "u1"
+    return u?.id != null ? `u${u.id}` : 'u0';
+  });
+
+  ngOnInit(){
+    const ownerId = this.ownerKey();
+    this.service.list(ownerId).subscribe(p => this.pets.set(p || []));
+  }
+
+  mapType(t: PetType){ return t === 'DOG' ? 'Perro' : 'Gato'; }
+  mapSize(s: PetSize){ return s === 'SMALL' ? 'Pequeño' : s === 'MEDIUM' ? 'Mediano' : 'Grande'; }
+
+  onFileSelected(event: Event){
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      this.form.patchValue({ photoUrl: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  create(){
+    if (this.form.invalid || this.creating) return;
+    this.creating = true;
+    const payload: Partial<Pet> = {
+      ...this.form.getRawValue(),
+      ownerId: this.ownerKey(),
+    } as Partial<Pet>;
+    this.service.create(payload).subscribe({
+      next: (created) => {
+        this.pets.update(list => [created, ...list]);
+        this.form.reset({ type: 'DOG', size: 'MEDIUM' });
+        this.creating = false;
+      },
+      error: () => { this.creating = false; }
+    });
+  }
+
+  remove(p: Pet){
+    if (!confirm(`¿Eliminar a ${p.name}?`)) return;
+    this.service.delete(p.id).subscribe(() => {
+      this.pets.update(list => list.filter(x => x.id !== p.id));
+    });
+  }
+}
+

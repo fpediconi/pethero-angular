@@ -1,10 +1,31 @@
 import { Routes } from '@angular/router';
-import { LoginPage } from './login.page';
-import { RegisterOwnerPage } from './register-owner.page';
-import { RegisterGuardianPage } from './register-guardian.page';
 
 export const AUTH_ROUTES: Routes = [
-  { path: 'login', component: LoginPage },
-  { path: 'register-owner', component: RegisterOwnerPage },
-  { path: 'register-guardian', component: RegisterGuardianPage }
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('../features/auth/login/login.component')
+        .then(m => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('../features/auth/register/register.component')
+        .then(m => m.RegisterComponent),
+  },
+  {
+    path: 'register-owner',
+    loadComponent: () =>
+      import('../features/auth/register/register.component')
+        .then(m => m.RegisterComponent),
+    data: { role: 'owner' as const }
+  },
+  {
+    path: 'register-guardian',
+    loadComponent: () =>
+      import('../features/auth/register/register.component')
+        .then(m => m.RegisterComponent),
+    data: { role: 'guardian' as const }
+  },
+  { path: '', pathMatch: 'full', redirectTo: 'login' }
 ];

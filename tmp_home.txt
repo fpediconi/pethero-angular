@@ -1,0 +1,249 @@
+﻿import { Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
+import { CurrentProfileService } from '../shared/services/current-profile.service';
+import { NotificationsService } from '../shared/services/notifications.service';
+import { BookingsService } from '../bookings/bookings.service';
+import { PetsService } from '../owners/pets/pets.service';
+import { ReviewsService } from '../reviews/reviews.service';
+import { AvailabilityService } from '../shared/services/availability.service';
+import { ChatService } from '../chat/chat.service';
+
+@Component({
+  standalone: true,
+  selector: 'ph-home-page',
+  imports: [CommonModule, RouterLink],
+  template: 
+  <section class="home" *ngIf="user() as u">
+    <header class="hero">
+      <h1>Hola, {{ displayName() }} 👋</h1>
+      <p class="subtitle">Bienvenido/a a tu panel de PetHero</p>
+    </header>
+
+    <div class="grid">
+      <!-- Cuenta -->
+      <div class="card">
+        <h3>Tu cuenta</h3>
+        <ul class="meta">
+          <li><strong>Rol:</strong> {{ roleLabel() }}</li>
+          <li *ngIf="profile()?.location"><strong>Ubicación:</strong> {{ profile()?.location }}</li>
+          <li *ngIf="profile()?.phone"><strong>Teléfono:</strong> {{ profile()?.phone }}</li>
+        </ul>
+        <a routerLink="/me/profile" class="btn link">Editar perfil</a>
+      </div>
+
+      <!-- Notificaciones y Mensajes -->
+      <div class="card">
+        <h3>Actividad</h3>
+        <p>Notificaciones sin leer: <strong>{{ unreadCount() }}</strong></p>
+        <p>Mensajes sin leer: <strong>{{ unreadMsgs() }}</strong></p>
+        <div *ngIf="recentNotifications().length" class="list">
+          <div class="list-title">Recientes</div>
+          <ul>
+            <li *ngFor="let n of recentNotifications()">{{ n.message }} · {{ n.createdAt | date:'short' }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Dueño: Mascotas y Reservas -->
+      <div class="card" *ngIf="isOwner()">
+        <h3>Mis Mascotas</h3>
+        <p>Total: <strong>{{ petsCount() }}</strong></p>
+        <div class="actions">
+          <a routerLink="/owners/pets" class="btn">Ver mascotas</a>
+          <a routerLink="/guardians/search" class="btn primary">Buscar guardianes</a>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="isOwner()">
+        <h3>Resumen de Reservas</h3>
+        <p>Activas: <strong>{{ ownerActive() }}</strong></p>
+        <p>Pendientes de pago: <strong>{{ ownerPendingPay() }}</strong></p>
+        <p *ngIf="nextOwnerBooking() as nb">Próxima reserva: <strong>{{ nb | date:'mediumDate' }}</strong></p>
+        <small *ngIf="!nextOwnerBooking()">Aún no tienes una próxima reserva</small>
+        <div class="actions">
+          <a routerLink="/bookings" class="btn">Ver reservas</a>
+        </div>
+      </div>
+
+      <!-- Guardián: Reservas, Reputación y Disponibilidad -->
+      <div class="card" *ngIf="isGuardian()">
+        <h3>Reservas (Guardián)</h3>
+        <p>Pendientes: <strong>{{ guardianPending() }}</strong></p>
+        <p>Activas: <strong>{{ guardianActive() }}</strong></p>
+        <p>Finalizadas: <strong>{{ guardianCompleted() }}</strong></p>
+        <p>Ingresos estimados: <strong>$ {{ guardianEarnings() | number:'1.0-0' }}</strong></p>
+        <div class="actions">
+          <a routerLink="/bookings" class="btn">Gestionar reservas</a>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="isGuardian()">
+        <h3>Reputación</h3>
+        <p>Calificación promedio: <strong>{{ ratingAvg() | number:'1.1-1' }}</strong> ({{ ratingCount() }} reseñas)</p>
+        <div class="actions">
+          <a routerLink="/reviews" class="btn">Ver reseñas</a>
+        </div>
+      </div>
+
+      <div class="card" *ngIf="isGuardian()">
+        <h3>Disponibilidad</h3>
+        <p *ngIf="nextAvailability() as na">Próximo turno disponible: <strong>{{ na | date:'mediumDate' }}</strong></p>
+        <small *ngIf="!nextAvailability()">Sin turnos próximos definidos</small>
+      </div>
+
+      <!-- Accesos rápidos -->
+      <div class="card">
+        <h3>Accesos rápidos</h3>
+        <div class="actions">
+          <a routerLink="/me/profile" class="btn">Mi perfil</a>
+          <a routerLink="/bookings" class="btn" *ngIf="auth.isLoggedIn()">Reservas</a>
+          <a routerLink="/owners/pets" class="btn" *ngIf="isOwner()">Mis mascotas</a>
+          <a routerLink="/guardians/search" class="btn" *ngIf="isOwner()">Buscar guardianes</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  ,
+  styles: [
+  .hero { margin-bottom: 1rem; }
+  .subtitle { color: #667085; margin: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .meta { list-style: none; padding: 0; margin: .5rem 0 1rem; }
+  .meta li { margin: .25rem 0; }
+  .btn { display: inline-block; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #e5e7eb; text-decoration: none; color: #0f172a; background: #f8fafc; margin-right: .5rem; }
+  .btn.primary { background: #0ea5b7; color: #fff; border-color: #0ea5b7; }
+  .btn.link { background: transparent; border-color: transparent; color: #0ea5b7; padding-left: 0; }
+  .list { margin-top: .5rem; }
+  .list-title { color:#475569; font-weight:600; margin-bottom: .25rem; }
+  .actions { margin-top:.5rem; display:flex; flex-wrap:wrap; gap:.5rem; }
+  ]
+})
+export class HomePageComponent {
+  auth = inject(AuthService);
+  current = inject(CurrentProfileService);
+  notifications = inject(NotificationsService);
+  bookings = inject(BookingsService);
+  pets = inject(PetsService);
+  reviews = inject(ReviewsService);
+  availability = inject(AvailabilityService);
+  chat = inject(ChatService);
+
+  user = computed(() => this.auth.user());
+  profile = computed(() => this.current.profile());
+
+  // Owner state
+  petsCount = signal(0);
+  ownerPendingPay = signal(0);
+  nextOwnerBooking = signal<string | null>(null);
+
+  // Guardian state
+  guardianCompleted = signal(0);
+  guardianEarnings = signal(0);
+  ratingAvg = signal(0);
+  ratingCount = signal(0);
+  nextAvailability = signal<string | null>(null);
+
+  // Activity
+  unreadMsgs = computed(() => {
+    const me = String(this.user()?.id || '');
+    if (!me) return 0;
+    return this.chat.messages().filter(m => m.toUserId === me && m.status !== 'READ').length;
+  });
+
+  recentNotifications = computed(() => {
+    const u = this.user();
+    if (!u?.id) return [] as ReturnType<typeof this.notifications.listFor>;
+    return this.notifications.listFor(String(u.id))
+      .slice()
+      .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''))
+      .slice(0,3);
+  });
+
+  displayName(){
+    return this.profile()?.displayName || this.user()?.email || 'Usuario';
+  }
+  roleLabel(){
+    const r = this.user()?.role;
+    return r === 'guardian' ? 'Guardián' : r === 'owner' ? 'Dueño/a' : '—';
+  }
+  isOwner(){ return this.user()?.role === 'owner'; }
+  isGuardian(){ return this.user()?.role === 'guardian'; }
+
+  unreadCount(){
+    const u = this.user();
+    return u?.id ? this.notifications.listFor(String(u.id)).filter(n => !n.read).length : 0;
+  }
+
+  ownerActive(){
+    const u = this.user();
+    return u?.id ? this.bookings.listActiveForOwner(String(u.id)).length : 0;
+  }
+
+  guardianPending(){
+    const u = this.user();
+    return u?.id ? this.bookings.listPendingRequests(String(u.id)).length : 0;
+  }
+
+  guardianActive(){
+    const u = this.user();
+    return u?.id ? this.bookings.listActiveForGuardian(String(u.id)).length : 0;
+  }
+
+  ngOnInit(){
+    const u = this.user();
+    if (!u?.id) return;
+
+    if (u.role === 'owner'){
+      this.pets.list(String(u.id)).subscribe({
+        next: list => this.petsCount.set((list || []).length),
+        error: () => this.petsCount.set(0)
+      });
+      const act = this.bookings.listActiveForOwner(String(u.id));
+      this.ownerPendingPay.set(act.filter(b => !b.depositPaid).length);
+      if (act.length){
+        const next = act
+          .map(b => new Date(b.start))
+          .filter(d => !isNaN(d.getTime()))
+          .sort((a,b) => a.getTime()-b.getTime())[0];
+        this.nextOwnerBooking.set(next ? next.toISOString() : null);
+      }
+    }
+
+    if (u.role === 'guardian'){
+      const gid = String(u.id);
+      const active = this.bookings.listActiveForGuardian(gid);
+      const completed = this.bookings.listCompletedForGuardian(gid);
+      this.guardianCompleted.set(completed.length);
+      const earn = [...active, ...completed]
+        .filter(b => ['CONFIRMED','IN_PROGRESS','COMPLETED'].includes(b.status))
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+      this.guardianEarnings.set(earn);
+
+      this.reviews.list(gid).subscribe({
+        next: list => {
+          const count = (list || []).length;
+          const avg = count ? (list!.reduce((s,r) => s + (r.rating||0), 0) / count) : 0;
+          this.ratingCount.set(count);
+          this.ratingAvg.set(avg);
+        },
+        error: () => { this.ratingCount.set(0); this.ratingAvg.set(0); }
+      });
+
+      this.availability.listByGuardian(gid).subscribe({
+        next: slots => {
+          const now = Date.now();
+          const next = (slots || [])
+            .map(s => new Date(s.start))
+            .filter(d => !isNaN(d.getTime()) && d.getTime() >= now)
+            .sort((a,b) => a.getTime() - b.getTime())[0];
+          this.nextAvailability.set(next ? next.toISOString() : null);
+        },
+        error: () => this.nextAvailability.set(null)
+      });
+    }
+  }
+}
+

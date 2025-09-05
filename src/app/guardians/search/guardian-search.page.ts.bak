@@ -1,0 +1,109 @@
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { GuardiansService } from '../guardians.service';
+import { GuardianProfile } from '../../shared/models/guardian';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../auth/auth.service';
+import { PetsService } from '../../owners/pets/pets.service';
+import { Pet } from '../../shared/models/pet';
+import { BookingsService } from '../../bookings/bookings.service';
+import { validRange } from '../../shared/utils/date.util';
+
+@Component({
+  selector: 'ph-guardian-search',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  template: `
+  <div class="card">
+    <h2>Buscar Guardianes</h2>
+    <form [formGroup]="filters" (ngSubmit)="search()">
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px">
+        <input placeholder="Ciudad" formControlName="city"/>
+        <input type="date" formControlName="start"/>
+        <input type="date" formControlName="end"/>
+        <select formControlName="petId" [disabled]="!pets().length">
+          <option value="" disabled selected>Elegí tu mascota</option>
+          <option *ngFor="let p of pets()" [value]="p.id">{{ p.name }} ({{ p.type }}, {{ p.size }})</option>
+        </select>
+        <input placeholder="Precio máx por noche" type="number" formControlName="maxPrice"/>
+      </div>
+      <p class="error" *ngIf="error()">{{ error() }}</p>
+      <p *ngIf="!pets().length" class="muted">No tienes mascotas cargadas. Agrega una en Owners → Mascotas.</p>
+      <button style="margin-top:12px">Buscar</button>
+    </form>
+  </div>
+
+  <div style="display:grid; gap:12px; margin-top:12px">
+    <div class="card" *ngFor="let g of results()" style="display:grid; grid-template-columns: 96px 1fr; gap:12px; align-items:center">
+      <img [src]="g.avatarUrl || (g.photos && g.photos[0]) || 'https://via.placeholder.com/96'" alt="avatar" style="width:96px;height:96px;object-fit:cover;border-radius:8px">
+      <div>
+        <h3>{{ g.name || ('Guardián ' + g.id) }} – \${{ g.pricePerNight }}/noche</h3>
+        <p class="muted">{{ g.city }}</p>
+        <p>{{ g.bio }}</p>
+        <p><span class="badge">Rating: {{ g.ratingAvg || 0 }}/5 ({{ g.ratingCount || 0 }})</span></p>
+        <p><span class="badge">Disponible: {{ filters.value.start }} → {{ filters.value.end }}</span></p>
+        <div style="display:flex; gap:12px">
+          <a [routerLink]="['/guardians', 'profile', g.id]"
+             [queryParams]="{ city: filters.value.city, start: filters.value.start, end: filters.value.end, petId: filters.value.petId, maxPrice: filters.value.maxPrice }"
+             [queryParamsHandling]="'merge'"
+          >Ver perfil</a>
+          <a [routerLink]="['/bookings','request', g.id]"
+             [queryParams]="{ start: filters.value.start, end: filters.value.end, petId: filters.value.petId }"
+          >Hacer reserva</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  `
+})
+export class GuardianSearchPage {
+  private fb = inject(FormBuilder);
+  private guardians = inject(GuardiansService);
+  private auth = inject(AuthService);
+  private petsService = inject(PetsService);
+  private bookings = inject(BookingsService);
+
+  filters = this.fb.group({
+    city:[''],
+    start:['', Validators.required],
+    end:['', Validators.required],
+    petId:['', Validators.required],
+    maxPrice:[null]
+  });
+  results = signal<GuardianProfile[]>([]);
+  pets = signal<Pet[]>([]);
+  error = signal<string | null>(null);
+
+  ngOnInit(){
+    const user = this.auth.user();
+    if (user?.role === 'owner' && user.id != null) {
+      const ownerKey = `u${user.id}`;
+      this.petsService.list(ownerKey).subscribe(p => {
+        const arr = p || [];
+        this.pets.set(arr);
+        if (arr.length === 1) this.filters.patchValue({ petId: String(arr[0].id) });
+      });
+    }
+  }
+
+  async search(){
+    this.error.set(null);
+    const f = this.filters.getRawValue();
+    const err = validRange(String(f.start || ''), String(f.end || ''));
+    if (err) { this.error.set(err); this.results.set([]); return; }
+    if (!f.petId) { this.error.set('Seleccione una mascota para buscar.'); this.results.set([]); return; }
+
+    const pet = this.pets().find(p => String(p.id) === String(f.petId));
+    const base = await this.guardians.search({ city: f.city, maxPrice: f.maxPrice });
+    const filtered = (base || [])
+      .filter(g => pet ? (g.acceptedTypes || []).includes(pet.type as any) : true)
+      .filter(g => pet ? (g.acceptedSizes || []).includes(pet.size as any) : true)
+      .filter(g => !f.maxPrice || (g.pricePerNight || 0) <= Number(f.maxPrice))
+      .filter(g => this.bookings.isGuardianAvailable(g.id, String(f.start), String(f.end)))
+      .sort((a,b) => (a.pricePerNight||0) - (b.pricePerNight||0));
+    if (!filtered.length) this.error.set('No hay guardianes disponibles para ese período.');
+    this.results.set(filtered);
+  }
+}
+

@@ -1,0 +1,422 @@
+﻿import { Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
+import { CurrentProfileService } from '../shared/services/current-profile.service';
+import { NotificationsService } from '../shared/services/notifications.service';
+import { BookingsService } from '../bookings/bookings.service';
+import { PetsService } from '../owners/pets/pets.service';
+import { ReviewsService } from '../reviews/reviews.service';
+import { AvailabilityService } from '../shared/services/availability.service';
+import { ChatService } from '../chat/chat.service';
+import { Booking } from '../shared/models/booking';
+import { ApiService } from '../shared/services/api.service';
+import { AvatarComponent } from '../shared/ui/avatar.component';
+
+@Component({
+  standalone: true,
+  selector: 'ph-home-page',
+  imports: [CommonModule, RouterLink, AvatarComponent],
+  template: `
+  <section class="hero" *ngIf="user() as u">
+    <div class="hero-bg"></div>
+    <div class="hero-inner">
+      <div class="identity">
+        <span class="ring">
+          <app-avatar size="lg" [src]="avatarUrl()" [name]="displayName()"></app-avatar>
+        </span>
+        <div>
+          <h1>{{ greet() }}, {{ displayName() }}</h1>
+          <p class="subtitle">Tu panel de control PetHero</p>
+          <div class="role-chip">{{ roleLabel() }}</div>
+        </div>
+      </div>
+      <div class="cta">
+        <a routerLink="/bookings" class="btn primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 15H5V10h14z"/></svg>
+          Reservas
+        </a>
+        <a *ngIf="isOwner()" routerLink="/guardians/search" class="btn small ghost in-card">Buscar guardianes</a>
+        <a *ngIf="isGuardian()" routerLink="/me/profile" class="btn small ghost in-card">Editar perfil</a>
+      </div>
+      <div class="stats">
+        <div class="chip">
+          <span class="kpi">{{ unreadCount() }}</span>
+          <span class="lbl">Notificaciones</span>
+        </div>
+        <div class="chip">
+          <span class="kpi">{{ unreadMsgs() }}</span>
+          <span class="lbl">Mensajes</span>
+        </div>
+        <div class="chip" *ngIf="isOwner()">
+          <span class="kpi">{{ petsCount() }}</span>
+          <span class="lbl">Mascotas</span>
+        </div>
+        <div class="chip" *ngIf="isGuardian()">
+          <span class="kpi">$ {{ guardianEarnings() | number:'1.0-0' }}</span>
+          <span class="lbl">Ingresos est.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="deck">
+    <!-- Actividad -->
+    <article class="card glass">
+      <header>
+        <h3>Actividad</h3>
+        <span class="dot" [class.ok]="unreadCount()===0"></span>
+      </header>
+      <p class="muted">Mantente al día con lo último</p>
+      <ul class="list" *ngIf="recentNotifications().length; else emptyN">
+        <li *ngFor="let n of recentNotifications()">
+          <span class="bullet"></span>
+          <div>
+            <div class="msg">{{ n.message }}</div>
+            <div class="time">{{ n.createdAt | date:'short' }}</div>
+          </div>
+        </li>
+      </ul>
+      <ng-template #emptyN>
+        <div class="empty">Sin novedades recientes</div>
+      </ng-template>
+    </article>
+
+    <!-- Dueño: Mascotas + Reservas + Spark -->
+    <article class="card glass" *ngIf="isOwner()">
+      <header><h3>Mis Mascotas</h3><span class="badge">{{ petsCount() }}</span></header>
+      <p class="muted">Gestiona tu manada</p>
+      <div class="quick">
+        <a routerLink="/owners/pets" class="btn small">Ver mascotas</a>
+        <a routerLink="/guardians/search" class="btn small ghost in-card">Buscar guardianes</a>
+      </div>
+      <div class="spark" *ngIf="ownerSpark().length">
+        <span class="bar" *ngFor="let h of ownerSpark(); let i = index" [style.height.%]="h" [style.animationDelay]="(i*60)+'ms'"></span>
+      </div>
+      <small class="hint" *ngIf="ownerSpark().length">Últimas {{ ownerSpark().length }} reservas (importe relativo)</small>
+    </article>
+
+    <article class="card glass" *ngIf="isOwner()">
+      <header><h3>Resumen de Reservas</h3></header>
+      <div class="grid2">
+        <div class="pill">
+          <div class="big">{{ ownerActive() }}</div>
+          <div class="lbl">Activas</div>
+        </div>
+        <div class="pill warn">
+          <div class="big">{{ ownerPendingPay() }}</div>
+          <div class="lbl">Pend. de pago</div>
+        </div>
+      </div>
+      <div class="next" *ngIf="nextOwnerBooking() as nb; else noNext">Próxima: <strong>{{ nb | date:'mediumDate' }}</strong></div>
+      <ng-template #noNext><div class="next muted">Sin próximas reservas</div></ng-template>
+      <div class="quick"><a routerLink="/bookings" class="btn small">Ver reservas</a></div>
+    </article>
+
+    <!-- Guardián: KPIs + Spark -->
+    <article class="card glass" *ngIf="isGuardian()">
+      <header><h3>Panel Guardián</h3></header>
+      <div class="grid3">
+        <div class="pill">
+          <div class="big">{{ guardianPending() }}</div>
+          <div class="lbl">Pendientes</div>
+        </div>
+        <div class="pill">
+          <div class="big">{{ guardianActive() }}</div>
+          <div class="lbl">Activas</div>
+        </div>
+        <div class="pill ok">
+          <div class="big">{{ guardianCompleted() }}</div>
+          <div class="lbl">Finalizadas</div>
+        </div>
+      </div>
+      <div class="money">Ingresos estimados <strong>$ {{ guardianEarnings() | number:'1.0-0' }}</strong></div>
+      <div class="spark" *ngIf="guardianSpark().length">
+        <span class="bar alt" *ngFor="let h of guardianSpark(); let i = index" [style.height.%]="h" [style.animationDelay]="(i*60)+'ms'"></span>
+      </div>
+      <small class="hint" *ngIf="guardianSpark().length">Últimas {{ guardianSpark().length }} reservas atendidas</small>
+    </article>
+
+    <article class="card glass" *ngIf="isGuardian()">
+      <header><h3>Reputación</h3></header>
+      <div class="rating">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="m17.562 21.5l-5.562-3l-5.562 3l1.062-6.187l-4.5-4.375l6.218-.906L12 4.5l2.781 5.532l6.219.906l-4.5 4.375z"/></svg>
+        <div class="score">{{ ratingAvg() | number:'1.1-1' }}</div>
+        <div class="count">({{ ratingCount() }} reseñas)</div>
+      </div>
+      <div class="quick"><a routerLink="/reviews" class="btn small ghost in-card">Ver reseñas</a></div>
+    </article>
+
+    <article class="card glass">
+      <header><h3>Accesos rápidos</h3></header>
+      <div class="quick wrap">
+        <a routerLink="/me/profile" class="btn chiplink">Perfil</a>
+        <a routerLink="/bookings" class="btn chiplink">Reservas</a>
+        <a *ngIf="isOwner()" routerLink="/owners/pets" class="btn chiplink">Mis mascotas</a>
+        <a *ngIf="isOwner()" routerLink="/guardians/search" class="btn chiplink">Buscar guardianes</a>
+      </div>
+    </article>
+  </section>
+  `,
+  styles: [`
+  :host{ display:block; --bg1:#06b6d4; --bg2:#3b82f6; --bg3:#a855f7; --ink:#0f172a; --muted:#5b6472; --card:#ffffff; --glass:rgba(255,255,255,.6); --border:rgba(15,23,42,.08); }
+  /* HERO */
+  .hero{ position:relative; border-radius:20px; overflow:hidden; margin-bottom:18px; }
+  .hero-bg{ position:absolute; inset:0; background:linear-gradient(120deg,var(--bg1),var(--bg2),var(--bg3)); background-size:180% 180%; animation:flow 10s ease-in-out infinite; filter:saturate(110%); }
+  .hero-inner{ position:relative; padding:28px 20px; display:grid; gap:16px; grid-template-columns: 1fr; color:white }
+  .identity{ display:flex; gap:14px; align-items:center }
+  .identity h1{ margin:0; font-size:2rem; letter-spacing:.2px }
+  .subtitle{ margin:4px 0 0; opacity:.9 }
+  .ring{ display:inline-grid; place-items:center; padding:6px; border-radius:999px; background: conic-gradient(from 180deg, rgba(255,255,255,.8), rgba(255,255,255,.1), rgba(255,255,255,.8)); }
+  .role-chip{ display:inline-block; margin-top:8px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); backdrop-filter:saturate(140%) blur(2px); font-weight:600; }
+  .cta{ display:flex; gap:10px; flex-wrap:wrap }
+  .btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.4); color:#0f172a; background:#fff; text-decoration:none; font-weight:700; box-shadow:0 6px 18px rgba(2,8,23,.12); transition:transform .15s ease, box-shadow .15s ease }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(2,8,23,.18) }
+  .btn.primary{ background:linear-gradient(140deg,#22d3ee,#60a5fa,#a78bfa); color:#fff; border:0 }
+  .btn.ghost{ background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.3) }
+  .btn.small{ padding:8px 10px; border-radius:10px; font-weight:600 }
+  .chiplink{ background:#f8fafc; border-color:var(--border); }
+
+  .stats{ display:flex; gap:10px; flex-wrap:wrap }
+  .chip{ display:flex; flex-direction:column; min-width:110px; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35); color:#fff; backdrop-filter:saturate(140%) blur(3px) }
+  .chip .kpi{ font-size:1.25rem; font-weight:800; line-height:1 }
+  .chip .lbl{ opacity:.9 }
+
+  /* DECK */
+  .deck{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card{ position:relative; border-radius:16px; border:1px solid var(--border); background:var(--card); box-shadow:0 8px 30px rgba(2,8,23,.06); overflow:hidden }
+  .glass{ background:linear-gradient( to bottom right, rgba(255,255,255,.85), rgba(255,255,255,.6) ); backdrop-filter: saturate(160%) blur(8px); }
+  .card header{ display:flex; align-items:center; justify-content:space-between; padding:14px 14px 0 14px }
+  .card h3{ margin:0; font-size:1.05rem }
+  .card .muted{ color:var(--muted); margin:6px 14px }
+  .dot{ width:10px; height:10px; border-radius:999px; background:#fca5a5; box-shadow:0 0 0 3px rgba(252,165,165,.25) }
+  .dot.ok{ background:#86efac; box-shadow:0 0 0 3px rgba(134,239,172,.25) }
+  .badge{ background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; padding:2px 8px; border-radius:999px; font-weight:700 }
+  .quick{ display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap }
+  .quick.wrap{ gap:10px }
+  .list{ list-style:none; margin:6px 0 12px; padding:0 14px }
+  .list li{ display:flex; gap:10px; padding:8px 0; border-bottom:1px dashed rgba(2,8,23,.06) }
+  .list .bullet{ width:10px; height:10px; border-radius:50%; background:linear-gradient(140deg,#06b6d4,#3b82f6,#a855f7) }
+  .list .msg{ font-weight:600 }
+  .list .time{ color:var(--muted); font-size:.85rem }
+  .empty{ margin:10px 14px 18px; color:var(--muted) }
+
+  .grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:10px 14px }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 14px }
+  .pill{ background:#f8fafc; border:1px solid var(--border); border-radius:14px; padding:10px 12px; text-align:center }
+  .pill.ok{ background:#ecfdf5; border-color:#a7f3d0 }
+  .pill.warn{ background:#fff7ed; border-color:#fed7aa }
+  .pill .big{ font-size:1.4rem; font-weight:800; line-height:1 }
+  .pill .lbl{ color:#64748b; margin-top:4px }
+  .next{ padding:0 14px 10px }
+  .money{ padding:0 14px; color:#065f46 }
+
+  /* Sparkbars */
+  .spark{ height:56px; display:flex; align-items:flex-end; gap:6px; padding:8px 14px }
+  .bar{ width:12px; background:linear-gradient(180deg,#22d3ee,#0ea5b7); border-radius:6px 6px 0 0; opacity:.95; transform:translateY(8px); animation:rise .7s ease forwards }
+  .bar.alt{ background:linear-gradient(180deg,#60a5fa,#3b82f6) }
+  .hint{ display:block; padding:0 14px 14px; color:#64748b }
+
+  /* Ghost buttons visible on cards */
+  .card .btn.ghost, .btn.ghost.in-card{ background:#eef2ff; color:#1f2937; border-color:#c7d2fe }
+
+  @keyframes rise{ from{ height:12%; opacity:.2; transform:translateY(8px) } to{ opacity:1; transform:translateY(0) } }
+  @keyframes flow{ 0%{ background-position:0% 50% } 50%{ background-position:100% 50% } 100%{ background-position:0% 50% } }
+
+  /* Responsive tweaks */
+  @media (min-width: 720px){ .hero-inner{ grid-template-columns: 1.1fr .9fr; align-items:center } }
+  @media (prefers-color-scheme: dark){
+    :host{ --card:#0b1324; --border:rgba(255,255,255,.08); --ink:#e5e7eb; --muted:#94a3b8 }
+    .chiplink{ background:#0f172a; color:#e5e7eb }
+    .pill{ background:#0f172a; border-color:var(--border) }
+    .list .time{ color:#9aa4b2 }
+    .card .btn.ghost, .btn.ghost.in-card{ background:#111827; color:#e5e7eb; border-color:#374151 }
+  }
+  `]
+})
+export class HomePageComponent {
+  auth = inject(AuthService);
+  current = inject(CurrentProfileService);
+  notifications = inject(NotificationsService);
+  bookings = inject(BookingsService);
+  pets = inject(PetsService);
+  reviews = inject(ReviewsService);
+  availability = inject(AvailabilityService);
+  chat = inject(ChatService);
+  api = inject(ApiService);
+
+  user = computed(() => this.auth.user());
+  profile = computed(() => this.current.profile());
+
+  avatarUrl = computed(() => {
+    const u = this.user();
+    const url = (this.current.profile()?.avatarUrl || '').trim();
+    if (url) return url;
+    const id = u?.id ? String(u.id) : 'guest';
+    return `https://i.pravatar.cc/120?u=${id}`;
+  });
+
+  // Greeting
+  greet = signal('Hola');
+
+  // Owner state
+  petsCount = signal(0);
+  ownerPendingPay = signal(0);
+  nextOwnerBooking = signal<string | null>(null);
+
+  // Guardian state
+  guardianCompleted = signal(0);
+  guardianEarnings = signal(0);
+  ratingAvg = signal(0);
+  ratingCount = signal(0);
+  nextAvailability = signal<string | null>(null);
+
+  // Activity
+  unreadMsgs = computed(() => {
+    const me = String(this.user()?.id || '');
+    if (!me) return 0;
+    return this.chat.messages().filter(m => m.toUserId === me && m.status !== 'READ').length;
+  });
+
+  recentNotifications = computed(() => {
+    const u = this.user();
+    if (!u?.id) return [] as ReturnType<typeof this.notifications.listFor>;
+    return this.notifications.listFor(String(u.id))
+      .slice()
+      .sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      .slice(0,3);
+  });
+
+  displayName(){
+    return this.profile()?.displayName || this.user()?.email || 'Usuario';
+  }
+  roleLabel(){
+    const r = this.user()?.role;
+    return r === 'guardian' ? 'Guardián' : r === 'owner' ? 'Dueño/a' : '—';
+  }
+  isOwner(){ return this.user()?.role === 'owner'; }
+  isGuardian(){ return this.user()?.role === 'guardian'; }
+
+  unreadCount(){
+    const u = this.user();
+    return u?.id ? this.notifications.listFor(String(u.id)).filter(n => !n.read).length : 0;
+  }
+
+  ownerActive(){
+    const u = this.user();
+    return u?.id ? this.bookings.listActiveForOwner(String(u.id)).length : 0;
+  }
+
+  guardianPending(){
+    const u = this.user();
+    return u?.id ? this.bookings.listPendingRequests(String(u.id)).length : 0;
+  }
+
+  guardianActive(){
+    const u = this.user();
+    return u?.id ? this.bookings.listActiveForGuardian(String(u.id)).length : 0;
+  }
+
+  // Spark data
+  private normalize(values: number[]): number[] {
+    if (!values.length) return [];
+    const max = Math.max(...values, 1);
+    return values.map(v => Math.max(12, Math.round((v / max) * 100))); // min 12%
+  }
+  private lastBy(arr: Booking[], n = 10){
+    return arr
+      .slice()
+      .sort((a,b) => (a.createdAt || '').localeCompare(b.createdAt || ''))
+      .slice(-n);
+  }
+  ownerSpark(){
+    const u = this.user();
+    if (!u?.id) return [] as number[];
+    const last = this.lastBy(this.bookings.listForOwner(String(u.id)));
+    const values = last.map(b => Math.max(1, b.totalPrice || 0));
+    return this.normalize(values);
+  }
+  guardianSpark(){
+    const u = this.user();
+    if (!u?.id) return [] as number[];
+    const last = this.lastBy(this.bookings.listForGuardian(String(u.id)));
+    const values = last.map(b => Math.max(1, b.totalPrice || 0));
+    return this.normalize(values);
+  }
+
+  ngOnInit(){
+    const u = this.user();
+    if (!u?.id) return;
+
+    // Rotate greeting per visit
+    try {
+      const list = ['Hola', '¡Qué bueno verte!', 'Bienvenido/a de vuelta', '¡Hey!', '¿Listo/a para cuidar?'];
+      const last = sessionStorage.getItem('pethero_greet_last') || '';
+      let pick = list[Math.floor(Math.random()*list.length)];
+      if (pick === last) pick = list[(list.indexOf(pick)+1) % list.length];
+      this.greet.set(pick);
+      sessionStorage.setItem('pethero_greet_last', pick);
+    } catch {}
+
+    if (u.role === 'owner'){
+            // Robust pets count: fetch all and filter to ensure accuracy (supports legacy ownerId formats)
+      this.api.get<any[]>('/pets').subscribe({
+        next: all => {
+          const uid = String(u.id);
+          const email = String((this.user()?.email || '')).toLowerCase();
+          const count = (all || []).filter(p => {
+            const oid = String((p as any).ownerId ?? '').toLowerCase();
+            const oemail = String((p as any).ownerEmail ?? '').toLowerCase();
+            return oid === uid || oid === ('u' + uid) || oemail === email;
+          }).length;
+          this.petsCount.set(count);
+        },
+        error: () => {}
+      });
+
+      const act = this.bookings.listActiveForOwner(String(u.id));
+      this.ownerPendingPay.set(act.filter(b => !b.depositPaid).length);
+      if (act.length){
+        const next = act
+          .map(b => new Date(b.start))
+          .filter(d => !isNaN(d.getTime()))
+          .sort((a,b) => a.getTime()-b.getTime())[0];
+        this.nextOwnerBooking.set(next ? next.toISOString() : null);
+      }
+    }
+
+    if (u.role === 'guardian'){
+      const gid = String(u.id);
+      const active = this.bookings.listActiveForGuardian(gid);
+      const completed = this.bookings.listCompletedForGuardian(gid);
+      this.guardianCompleted.set(completed.length);
+      const earn = [...active, ...completed]
+        .filter(b => ['CONFIRMED','IN_PROGRESS','COMPLETED'].includes(b.status))
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+      this.guardianEarnings.set(earn);
+
+      this.reviews.list(gid).subscribe({
+        next: list => {
+          const count = (list || []).length;
+          const avg = count ? (list!.reduce((s,r) => s + (r.rating||0), 0) / count) : 0;
+          this.ratingCount.set(count);
+          this.ratingAvg.set(avg);
+        },
+        error: () => { this.ratingCount.set(0); this.ratingAvg.set(0); }
+      });
+
+      this.availability.listByGuardian(gid).subscribe({
+        next: slots => {
+          const now = Date.now();
+          const next = (slots || [])
+            .map(s => new Date(s.start))
+            .filter(d => !isNaN(d.getTime()) && d.getTime() >= now)
+            .sort((a,b) => a.getTime() - b.getTime())[0];
+          this.nextAvailability.set(next ? next.toISOString() : null);
+        },
+        error: () => this.nextAvailability.set(null)
+      });
+    }
+  }
+}
+

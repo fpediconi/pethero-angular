@@ -5,4 +5,5 @@ export interface Message {
   body: string;
   createdAt: string;
   bookingId?: string;
+  status?: 'SENT' | 'RECEIVED' | 'READ';
 }
