@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../../auth/auth.service';
 import { ProfileService } from '../../../shared/services/profile.service';
-import { Profile } from '../../../core/models/profile.model';
+import { Profile } from '../../../shared/models/profile.model';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs/operators';
 import { CurrentProfileService } from '../../../shared/services/current-profile.service';
@@ -119,6 +119,19 @@ import { PetType } from '../../../shared/models/pet';
         </div>
       </form>
 
+      <aside class="card preview">
+        <h2>Vista previa</h2>
+        <div class="avatar-preview">
+          <img *ngIf="avatarUrl() as a" [src]="a" alt="Vista previa de avatar" />
+          <span *ngIf="!avatarUrl()" class="kbd">Sin imagen</span>
+        </div>
+        <div>
+          <div><strong>{{ form.get('displayName')?.value || 'Tu nombre' }}</strong></div>
+          <div class="muted">{{ form.get('location')?.value || 'Ubicación' }}</div>
+          <p class="muted">{{ form.get('bio')?.value || 'Tu bio aparecerá aquí.' }}</p>
+        </div>
+      </aside>
+
       <!-- Guardian settings -->
       <aside class="card preview" *ngIf="isGuardian()">
         <h2>Configuración de guardián</h2>
@@ -161,18 +174,7 @@ import { PetType } from '../../../shared/models/pet';
         </div>
       </aside>
 
-      <aside class="card preview">
-        <h2>Vista previa</h2>
-        <div class="avatar-preview">
-          <img *ngIf="avatarUrl() as a" [src]="a" alt="Vista previa de avatar" />
-          <span *ngIf="!avatarUrl()" class="kbd">Sin imagen</span>
-        </div>
-        <div>
-          <div><strong>{{ form.get('displayName')?.value || 'Tu nombre' }}</strong></div>
-          <div class="muted">{{ form.get('location')?.value || 'Ubicación' }}</div>
-          <p class="muted">{{ form.get('bio')?.value || 'Tu bio aparecerá aquí.' }}</p>
-        </div>
-      </aside>
+      
     </div>
 
     <div *ngIf="message()" class="toast">{{ message() }}</div>

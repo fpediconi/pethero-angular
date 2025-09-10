@@ -1,11 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatService } from '../chat.service';
+import { AuthService } from '../../auth/auth.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'ph-chat-contacts-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   styles: [`
     :host{ position:fixed; right:8px; top:70px; bottom:52px; z-index:30; }
     .panel{ width:240px; height:100%; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,.06); display:flex; flex-direction:column; overflow:hidden }
@@ -25,8 +27,9 @@ import { ChatService } from '../chat.service';
           <button class="minbtn" (click)="toggleMin()">Minimizar</button>
         </div>
         <ul>
-          <li *ngFor="let c of service.contacts()" (click)="open(c.id)">
-            <span>{{ service.displayName(c.id) }}</span>
+          <li *ngFor="let c of service.contacts()">
+            <span (click)="open(c.id)" style="flex:1">{{ service.displayName(c.id) }}</span>
+            <a *ngIf="isOwner()" [routerLink]="['/guardians','profile', c.id]" (click)="$event.stopPropagation()" aria-label="Ver perfil">Perfil</a>
             <span class="dot" *ngIf="service.unreadCountFor(c.id)() > 0"></span>
           </li>
           <li *ngIf="service.contacts().length === 0" style="color:#64748b">Sin contactos todavía</li>
@@ -40,9 +43,11 @@ import { ChatService } from '../chat.service';
 })
 export class ContactsPanelComponent {
   service = inject(ChatService);
+  private auth = inject(AuthService);
   minimized = signal<boolean>(false);
   ngOnInit(){ this.service.preloadNames(); }
   open(id: string){ this.service.openChat(id); }
+  isOwner(){ return this.auth.user()?.role === 'owner'; }
   toggleMin(){
     const next = !this.minimized();
     this.minimized.set(next);

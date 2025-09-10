@@ -23,7 +23,9 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
     <div class="hero-inner">
       <div class="identity">
         <span class="ring">
-          <app-avatar size="lg" [src]="avatarUrl()" [name]="displayName()"></app-avatar>
+          <img src="assets/logo-pet-hero.png"
+         alt="Pet Hero"
+         style="display:block;margin:0 auto 16px;max-width:240px;width:60%;height:auto;filter: drop-shadow(0 6px 16px rgba(15,23,42,.15));"/>
         </span>
         <div>
           <h1>{{ greet() }}, {{ displayName() }}</h1>

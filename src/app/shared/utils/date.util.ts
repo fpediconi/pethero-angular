@@ -33,3 +33,19 @@ export function validRange(start?: string, end?: string): string | null {
   return null;
 }
 
+export function formatRelative(date: string | Date): string {
+  const d = parseISO(date).getTime();
+  const now = Date.now();
+  const diff = Math.max(0, Math.floor((now - d) / 1000));
+  if (diff < 60) return `hace ${diff}s`;
+  const m = Math.floor(diff / 60);
+  if (m < 60) return `hace ${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h}h`;
+  const days = Math.floor(h / 24);
+  if (days < 30) return `hace ${days}d`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `hace ${months}m`;
+  const years = Math.floor(months / 12);
+  return `hace ${years}a`;
+}

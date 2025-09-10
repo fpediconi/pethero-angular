@@ -18,7 +18,9 @@ import { ChatService } from './chat/chat.service';
     <nav class="nav">
       <div class="brand">
         <a class="brand-link" routerLink="/" (click)="closeMenus()">
-          <span class="logo" aria-hidden="true">PH</span>
+          <span class="logo" aria-hidden="true">
+            <img src="assets/minilogo-pet-hero.png" alt="" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block;" />
+          </span>
           <span class="brand-name">PetHero</span>
         </a>
       </div>

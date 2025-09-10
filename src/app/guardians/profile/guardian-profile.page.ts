@@ -4,27 +4,31 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { GuardiansService } from '../guardians.service';
 import { ChatService } from '../../chat/chat.service';
 import { GuardianProfile } from '../../shared/models/guardian';
+import { ReviewsService } from '../../reviews/reviews.service';
+import { ReviewsPage } from '../../reviews/reviews.page';
 
 @Component({
   selector: 'ph-guardian-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ReviewsPage],
   template: `
     <ng-container *ngIf="profile() as p">
       <section class="hero">
-        <img class="avatar" [src]="p.avatarUrl || (p.photos && p.photos[0]) || 'https://via.placeholder.com/160'" alt="Avatar del guardián">
+        <img class="avatar" [src]="p.avatarUrl || (p.photos && p.photos[0]) || 'https://via.placeholder.com/160'" alt="Avatar del guardian">
         <div class="meta">
-          <h1 class="name">{{ p.name || ('Guardián ' + p.id) }}</h1>
+          <h1 class="name">{{ p.name || ('Guardian ' + p.id) }}</h1>
           <p class="city">{{ p.city || 'Ciudad no informada' }}</p>
           <div class="badges">
-            <span class="badge rating">⭐ {{ p.ratingAvg || 0 }}/5 ({{ p.ratingCount || 0 }})</span>
+            <span class="badge rating" (click)="scrollToReviews()" style="cursor:pointer" aria-label="Promedio de reseñas">
+              ★ {{ summary().avg }}/5 ({{ summary().count }})
+            </span>
             <span class="badge price">$ {{ p.pricePerNight }} / noche</span>
           </div>
           <div class="actions">
-            <a class="btn primary" [routerLink]="['/bookings/request', p.id]"
+            <a class="btn primary" *ngIf="fromSearch()" [routerLink]="['/bookings/request', p.id]"
                [queryParams]="{ start: route.snapshot.queryParams['start'], end: route.snapshot.queryParams['end'], petId: route.snapshot.queryParams['petId'] }">Hacer reserva</a>
             <button class="btn" type="button" (click)="message(p.id)">Mandar mensaje</button>
-            <a class="btn" [routerLink]="['/guardians','search']"
+            <a class="btn" *ngIf="fromSearch()" [routerLink]="['/guardians','search']"
                [queryParams]="route.snapshot.queryParams" [queryParamsHandling]="'merge'">Volver a la búsqueda</a>
           </div>
         </div>
@@ -33,7 +37,7 @@ import { GuardianProfile } from '../../shared/models/guardian';
       <section class="content">
         <article class="card bio">
           <h3>Sobre mí</h3>
-          <p>{{ p.bio || 'Este guardián aún no escribió su bio.' }}</p>
+          <p>{{ p.bio || 'Este guardian aun no escribió su bio.' }}</p>
         </article>
 
         <article class="card details">
@@ -55,6 +59,10 @@ import { GuardianProfile } from '../../shared/models/guardian';
           <div class="grid">
             <img *ngFor="let url of p.photos" [src]="url" alt="Foto del hogar" class="photo">
           </div>
+        </article>
+
+        <article class="card reviews-block" id="reviews-block">
+          <ph-reviews [guardianId]="p.id"></ph-reviews>
         </article>
       </section>
     </ng-container>
@@ -96,14 +104,30 @@ export class GuardianProfilePage {
   route = inject(ActivatedRoute);
   private service = inject(GuardiansService);
   private chat = inject(ChatService);
+  private reviews = inject(ReviewsService);
   profile = signal<GuardianProfile | null>(null);
+  summary = signal({ avg: 0, count: 0 });
+  fromSearch = signal(false);
 
   ngOnInit(){
     const id = this.route.snapshot.paramMap.get('id')!;
-    this.service.getProfile(id).subscribe(p => this.profile.set(p));
+    const qp = this.route.snapshot.queryParams || {} as any;
+    // Consideramos "desde búsqueda" cuando hay rango de fechas (start/end)
+    this.fromSearch.set(!!(qp['start'] && qp['end']));
+    this.service.getProfile(id).subscribe(p => {
+      this.profile.set(p);
+      const s = this.reviews.summary(p.id);
+      // Bridge: assign reactive summary signal to field
+      this.summary = s as any;
+    });
   }
 
   message(guardianUserId: string){
     this.chat.openChat(guardianUserId);
+  }
+
+  scrollToReviews(){
+    const el = document.getElementById('reviews-block');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

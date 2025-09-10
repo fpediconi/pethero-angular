@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../auth/auth.service';
 import { ProfileService } from '../../../shared/services/profile.service';
-import { UserRole } from '../../../core/models/user.model';
+import { UserRole } from '../../../shared/models/user.model';
 import { finalize, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 

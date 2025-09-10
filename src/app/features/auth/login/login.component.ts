@@ -1,9 +1,9 @@
-﻿import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../auth/auth.service';
-import { UserRole } from '../../../core/models/user.model';
+import { UserRole } from '../../../shared/models/user.model';
 
 @Component({
   standalone: true,
@@ -11,9 +11,10 @@ import { UserRole } from '../../../core/models/user.model';
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
   <div class="container" style="max-width:520px;margin:48px auto;padding:0 12px;">
-    <h1 style="margin:0 0 20px;font-weight:700;font-size:2.2rem;color:#0f172a;">
-      Iniciar sesiÃ³n
-    </h1>
+    <!-- App logo -->
+    <img src="assets/logo-pet-hero.png"
+         alt="Pet Hero"
+         style="display:block;margin:0 auto 16px;max-width:240px;width:60%;height:auto;filter: drop-shadow(0 6px 16px rgba(15,23,42,.15));"/>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()"
           class="card"
@@ -30,21 +31,21 @@ import { UserRole } from '../../../core/models/user.model';
       />
       <small *ngIf="touched('email') && form.controls.email.invalid"
              style="color:#dc2626;">
-        {{ form.controls.email.hasError('required') ? 'El email es obligatorio' : 'Formato de email invÃ¡lido' }}
+        {{ form.controls.email.hasError('required') ? 'El email es obligatorio' : 'Formato de email inválido' }}
       </small>
 
       <!-- Password -->
-      <label style="font-weight:600;color:#334155;margin-top:6px;">ContraseÃ±a</label>
+      <label style="font-weight:600;color:#334155;margin-top:6px;">Contraseña</label>
       <input
         formControlName="password"
         type="password"
-        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+        placeholder="••••••"
         autocomplete="current-password"
         style="width:100%;height:42px;border:1px solid #e2e8f0;border-radius:10px;padding:0 12px;outline:none;"
       />
       <small *ngIf="touched('password') && form.controls.password.invalid"
              style="color:#dc2626;">
-        {{ form.controls.password.hasError('required') ? 'La contraseÃ±a es obligatoria' : 'MÃ­nimo 6 caracteres' }}
+        {{ form.controls.password.hasError('required') ? 'La contraseña es obligatoria' : 'Mínimo 6 caracteres' }}
       </small>
 
       <!-- Error general -->
@@ -52,7 +53,7 @@ import { UserRole } from '../../../core/models/user.model';
         {{ error() }}
       </div>
 
-      <!-- BotÃ³n ingresar -->
+      <!-- Botón ingresar -->
       <button
         type="submit"
         [disabled]="form.invalid || loading()"
@@ -61,14 +62,14 @@ import { UserRole } from '../../../core/models/user.model';
       </button>
 
       <ng-template #spinner>
-        <span class="sr-only">Cargandoâ€¦</span>
+        <span class="sr-only">Cargando…</span>
         <span style="width:16px;height:16px;border:2px solid #fff;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin .8s linear infinite;"></span>
       </ng-template>
 
       <div style="margin-top:8px;color:#475569">
-        Â¿No tenÃ©s cuenta?
-        <a [routerLink]="['/auth/register-owner']" style="color:#0ea5b7;text-decoration:none;">Crear cuenta (DueÃ±o/a)</a>
-        Â·
+        ¿No tenés cuenta?
+        <a [routerLink]="['/auth/register-owner']" style="color:#0ea5b7;text-decoration:none;">Crear cuenta (Dueño/a)</a>
+        ·
         <a [routerLink]="['/auth/register-guardian']" style="color:#0ea5b7;text-decoration:none;">Crear cuenta (Guardian)</a>
       </div>
     </form>
@@ -105,8 +106,7 @@ export class LoginComponent {
     const { email, password } = this.form.getRawValue();
 
     this.auth.login(email, password).subscribe({
-      next: (user: import('../../../core/models/user.model').User) => {
-        // redirige por query ?redirect=/foo si vino protegido
+      next: (user: import('../../../shared/models/user.model').User) => {
         const redirect = this.route.snapshot.queryParamMap.get('redirect');
         if (redirect) {
           this.router.navigateByUrl(redirect);
@@ -118,10 +118,9 @@ export class LoginComponent {
       },
       error: (e) => {
         console.error(e);
-        this.error.set('Email o contraseÃ±a incorrectos');
+        this.error.set('Email o contraseña incorrectos');
         this.loading.set(false);
       }
     });
   }
 }
-

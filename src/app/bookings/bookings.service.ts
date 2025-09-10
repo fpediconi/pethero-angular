@@ -12,29 +12,36 @@ export class BookingsService {
   private auth = inject(AuthService);
   private notifications = inject(NotificationsService);
 
-  // In-memory store (simulación de persistencia)
   private _bookings = signal<Booking[]>([]);
   bookings = this._bookings;
 
   constructor(){
-    // Inicializa con datos de localStorage si existen
-    try {
-      const raw = localStorage.getItem('pethero_bookings');
-      if (raw) this._bookings.set(JSON.parse(raw));
-    } catch { /* no-op */ }
+    // Load from mock API so both users share the same data
+    this.api.get<Booking[]>('/bookings').subscribe(list => {
+      this._bookings.set(list || []);
+      this.persist();
+    });
+    // Light polling to keep sessions in sync across tabs/users
+    setInterval(() => {
+      this.api.get<Booking[]>('/bookings').subscribe(list => {
+        const curr = JSON.stringify(this._bookings());
+        const next = JSON.stringify(list || []);
+        if (curr !== next) this._bookings.set(list || []);
+      });
+    }, 4000);
   }
 
   private persist(){
     try { localStorage.setItem('pethero_bookings', JSON.stringify(this._bookings())); } catch { /* no-op */ }
   }
 
-  // Listas por rol
-  listForOwner(ownerId: string){
-    return this._bookings().filter(b => b.ownerId === ownerId);
+  reload(){
+    return this.api.get<Booking[]>('/bookings').subscribe(list => this._bookings.set(list || []));
   }
-  listForGuardian(guardianId: string){
-    return this._bookings().filter(b => b.guardianId === guardianId);
-  }
+
+  // Owner queries
+  listForOwner(ownerId: string){ return this._bookings().filter(b => b.ownerId === ownerId); }
+  listForGuardian(guardianId: string){ return this._bookings().filter(b => b.guardianId === guardianId); }
 
   listActiveForOwner(ownerId: string){
     const active: BookingStatus[] = ['REQUESTED','ACCEPTED','CONFIRMED','IN_PROGRESS'];
@@ -45,7 +52,6 @@ export class BookingsService {
     return this.listForOwner(ownerId).filter(b => done.includes(b.status));
   }
   listActiveForGuardian(guardianId: string){
-    // Para guardián, las 'activas' no incluyen PENDIENTES (REQUESTED)
     const active: BookingStatus[] = ['ACCEPTED','CONFIRMED','IN_PROGRESS'];
     return this.listForGuardian(guardianId).filter(b => active.includes(b.status));
   }
@@ -53,30 +59,25 @@ export class BookingsService {
     const done: BookingStatus[] = ['CANCELLED','REJECTED','COMPLETED'];
     return this.listForGuardian(guardianId).filter(b => done.includes(b.status));
   }
-  listPendingRequests(guardianId: string){
-    return this.listForGuardian(guardianId).filter(b => b.status === 'REQUESTED');
-  }
+  listPendingRequests(guardianId: string){ return this.listForGuardian(guardianId).filter(b => b.status === 'REQUESTED'); }
 
-  // Disponibilidad del guardián: no debe superponer con reservas aceptadas/confirmadas/en curso
+  // Availability helpers
   isGuardianAvailable(guardianId: string, start: string, end: string){
     const blocked: BookingStatus[] = ['ACCEPTED','CONFIRMED','IN_PROGRESS'];
     return !this.listForGuardian(guardianId).some(b => blocked.includes(b.status) && overlaps(b.start, b.end, start, end));
   }
-
-  // Disponibilidad del dueño (no superposición para su mascota)
   isOwnerFree(ownerId: string, start: string, end: string){
     const blocked: BookingStatus[] = ['ACCEPTED','CONFIRMED','IN_PROGRESS'];
     return !this.listForOwner(ownerId).some(b => blocked.includes(b.status) && overlaps(b.start, b.end, start, end));
   }
 
-  // Crear solicitud (REQUESTED). Calcula precio total: noches * pricePerNight del guardián
+  // Create request
   async request(payload: { guardian: GuardianProfile; petId: string; start: string; end: string }): Promise<Booking> {
     const error = validRange(payload.start, payload.end);
     if (error) throw new Error(error);
     const user = this.auth.user();
     if (!user) throw new Error('Debe iniciar sesión para reservar.');
 
-    // Validaciones
     if (!this.isGuardianAvailable(payload.guardian.id, payload.start, payload.end)) {
       throw new Error('El guardián no está disponible en ese período.');
     }
@@ -99,27 +100,32 @@ export class BookingsService {
       createdAt: new Date().toISOString(),
     };
 
-    this._bookings.set([booking, ...this._bookings()]);
-    this.persist();
-    // Notificar a guardián (nueva solicitud)
-    this.notifications.notify(payload.guardian.id, `Nueva solicitud de reserva del usuario ${user.id} (${payload.start} → ${payload.end})`);
-    return booking;
+    return await new Promise<Booking>((resolve, reject) => {
+      this.api.post<Booking>('/bookings', booking).subscribe({
+        next: (saved) => {
+          this._bookings.set([saved, ...this._bookings()]);
+          this.persist();
+          this.notifications.notify(payload.guardian.id, `Nueva solicitud de reserva del usuario ${user.id} (${payload.start} – ${payload.end})`);
+          resolve(saved);
+        },
+        error: (e) => reject(e)
+      });
+    });
   }
 
-  // Acciones de dueño
+  // Owner actions
   cancel(bookingId: string){
     const b = this._bookings().find(x => x.id === bookingId);
     this._update(bookingId, { status: 'CANCELLED' });
-    if (b) this.notifications.notify(b.guardianId, `Reserva cancelada por el dueño (${b.start} → ${b.end}).`);
+    if (b) this.notifications.notify(b.guardianId, `Reserva cancelada por el dueño (${b.start} – ${b.end}).`);
   }
   pay(bookingId: string){
-    // Simular pago y marcar como confirmado
     const b = this._bookings().find(x => x.id === bookingId);
     this._update(bookingId, { depositPaid: true, status: 'CONFIRMED' });
-    if (b) this.notifications.notify(b.guardianId, `Reserva pagada. (${b.start} → ${b.end}).`);
+    if (b) this.notifications.notify(b.guardianId, `Reserva pagada. (${b.start} – ${b.end}).`);
   }
 
-  // Acciones de guardián
+  // Guardian actions
   accept(bookingId: string){
     const b = this._bookings().find(x => x.id === bookingId);
     if (!b) return;
@@ -127,7 +133,7 @@ export class BookingsService {
       throw new Error('No puede aceptar dos reservas superpuestas.');
     }
     this._update(bookingId, { status: 'ACCEPTED' });
-    this.notifications.notify(b.ownerId, `Tu solicitud fue aceptada por el guardián (${b.start} → ${b.end}).`);
+    this.notifications.notify(b.ownerId, `Tu solicitud fue aceptada por el guardián (${b.start} – ${b.end}).`);
   }
   reject(bookingId: string){
     const b = this._bookings().find(x => x.id === bookingId);
@@ -137,11 +143,22 @@ export class BookingsService {
   finalize(bookingId: string){
     const b = this._bookings().find(x => x.id === bookingId);
     this._update(bookingId, { status: 'COMPLETED' });
-    if (b) this.notifications.notify(b.ownerId, `Reserva finalizada (${b.start} → ${b.end}).`);
+    if (b) this.notifications.notify(b.ownerId, `Reserva finalizada (${b.start} – ${b.end}).`);
   }
 
   private _update(id: string, patch: Partial<Booking>){
-    this._bookings.set(this._bookings().map(b => b.id === id ? { ...b, ...patch } : b));
-    this.persist();
+    const curr = this._bookings().find(x => x.id === id);
+    if (!curr) return;
+    const next = { ...curr, ...patch } as Booking;
+    this.api.put<Booking>(`/bookings/${id}`, next).subscribe({
+      next: (saved) => {
+        this._bookings.set(this._bookings().map(b => b.id === id ? saved : b));
+        this.persist();
+      },
+      error: () => {
+        this._bookings.set(this._bookings().map(b => b.id === id ? next : b));
+        this.persist();
+      }
+    });
   }
 }

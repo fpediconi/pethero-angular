@@ -8,6 +8,7 @@ import { AuthService } from '../../auth/auth.service';
 import { PetsService } from '../../owners/pets/pets.service';
 import { Pet } from '../../shared/models/pet';
 import { BookingsService } from '../../bookings/bookings.service';
+import { ReviewsService } from '../../reviews/reviews.service';
 import { validRange } from '../../shared/utils/date.util';
 
 @Component({
@@ -60,7 +61,7 @@ import { validRange } from '../../shared/utils/date.util';
         <p class="city">{{ g.city }}</p>
         <p class="bio">{{ g.bio }}</p>
         <div class="chips">
-          <span class="chip">Rating: {{ g.ratingAvg || 0 }}/5 ({{ g.ratingCount || 0 }})</span>
+          <span class="chip">Rating: {{ sum(g.id).avg }}/5 ({{ sum(g.id).count }})</span>
           <span class="chip">Disponible: {{ filters.value.start }} &rarr; {{ filters.value.end }}</span>
         </div>
         <div class="actions">
@@ -115,6 +116,7 @@ export class GuardianSearchPage {
   private auth = inject(AuthService);
   private petsService = inject(PetsService);
   private bookings = inject(BookingsService);
+  private reviews = inject(ReviewsService);
 
   filters = this.fb.group({
     city:[''],
@@ -151,11 +153,20 @@ export class GuardianSearchPage {
     const filtered = (base || [])
       .filter(g => pet ? (g.acceptedTypes || []).includes(pet.type as any) : true)
       .filter(g => pet ? (g.acceptedSizes || []).includes(pet.size as any) : true)
-      .filter(g => !f.maxPrice || (g.pricePerNight || 0) <= Number(f.maxPrice))
+      .filter(g => {
+        const maxOk = !f.maxPrice || (g.pricePerNight || 0) <= Number(f.maxPrice);
+        const q = (f.city || '').trim();
+        if (!q) return maxOk;
+        const city = (g.city || '').toString();
+        return maxOk && city.toLowerCase().includes(q.toLowerCase());
+      })
       .filter(g => this.bookings.isGuardianAvailable(g.id, String(f.start), String(f.end)))
       .sort((a,b) => (a.pricePerNight||0) - (b.pricePerNight||0));
     if (!filtered.length) this.error.set('No hay guardianes disponibles para ese período.');
     this.results.set(filtered);
   }
-}
 
+  sum(id: string){
+    return this.reviews.summary(id)();
+  }
+}

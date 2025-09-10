@@ -1,13 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BookingsService } from '../bookings.service';
 import { Booking } from '../../shared/models/booking';
 import { AuthService } from '../../auth/auth.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'ph-bookings',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
   <ng-container *ngIf="user() as u">
     <div *ngIf="u.role === 'owner'" class="wrap">
@@ -27,6 +28,7 @@ import { AuthService } from '../../auth/auth.service';
             <div class="actions">
               <button class="danger" (click)="cancel(b)">Cancelar</button>
               <button class="primary" *ngIf="!b.depositPaid" (click)="pay(b)">Pagar</button>
+              <a class="btnlink" [routerLink]="['/guardians','profile', b.guardianId]">Ver perfil del guardián</a>
             </div>
           </article>
         </div>
@@ -83,6 +85,7 @@ import { AuthService } from '../../auth/auth.service';
             <div class="actions">
               <button class="primary" (click)="finalize(b)">Finalizar</button>
               <button class="danger" (click)="cancel(b)">Cancelar</button>
+              <a class="btnlink" [routerLink]="['/owners','profile', b.ownerId]">Ver perfil del dueño</a>
             </div>
           </article>
         </div>
@@ -120,10 +123,11 @@ import { AuthService } from '../../auth/auth.service';
     .chip.status.warn{ background:#fff7ed; border-color:#fed7aa; color:#9a3412 }
     .chip.pay{ background:#f1f5f9; border-color:#e2e8f0; color:#0f172a }
     .chip.pay.ok{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46 }
-    .actions{ display:flex; gap:8px; justify-content:flex-end }
+    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap }
     button{ padding:6px 10px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer }
     .primary{ background:#2563eb; color:white; border-color:#1d4ed8 }
     .danger{ background:#ef4444; color:white; border-color:#dc2626 }
+    .btnlink{ display:inline-flex; align-items:center; padding:6px 10px; border-radius:8px; border:1px solid #d1d5db; text-decoration:none; color:#111827; background:#fff }
     .empty{ text-align:center; color:#6b7280 }
   `]
 })
@@ -139,7 +143,10 @@ export class BookingsPage {
   guardianCompleted = signal<Booking[]>([]);
 
   ngOnInit(){
+    this.service.reload();
     this.refresh();
+    // Keep in sync with changes to the bookings store
+    effect(() => { void this.service.bookings(); this.refresh(); });
   }
 
   private refresh(){
@@ -180,3 +187,4 @@ export class BookingsPage {
     if (ok) { this.service.pay(b.id); this.refresh(); }
   }
 }
+
