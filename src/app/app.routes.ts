@@ -1,5 +1,6 @@
 ﻿import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
+import { guardianGuard } from './auth/guardian.guard';
 
 export const routes: Routes = [
   // 1) Home: redirige al buscador de guardianes
@@ -31,5 +32,6 @@ export const routes: Routes = [
   },
 
   { path: 'home', canActivate: [authGuard], loadComponent: () => import('./home/home.page').then(m => m.HomePageComponent) },
+  { path: 'guardian/availability', canActivate: [authGuard, guardianGuard], loadComponent: () => import('./features/guardian/availability/availability-page.component').then(m => m.AvailabilityPageComponent) },
   { path: '**', redirectTo: '' },
 ];

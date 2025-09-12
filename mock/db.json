@@ -352,54 +352,6 @@
   ],
   "bookings": [
     {
-      "id": "bk1",
-      "ownerId": "u1",
-      "guardianId": "g1",
-      "petId": "p1",
-      "start": "2025-08-20",
-      "end": "2025-08-22",
-      "status": "COMPLETED",
-      "depositPaid": true,
-      "totalPrice": 16000,
-      "createdAt": "2025-08-10T10:00:00.000Z"
-    },
-    {
-      "id": "bk2",
-      "ownerId": "u2",
-      "guardianId": "g1",
-      "petId": "p9",
-      "start": "2025-08-10",
-      "end": "2025-08-12",
-      "status": "COMPLETED",
-      "depositPaid": true,
-      "totalPrice": 16000,
-      "createdAt": "2025-08-01T10:00:00.000Z"
-    },
-    {
-      "id": "bk3",
-      "ownerId": "u1",
-      "guardianId": "g2",
-      "petId": "p1",
-      "start": "2025-08-01",
-      "end": "2025-08-02",
-      "status": "COMPLETED",
-      "depositPaid": true,
-      "totalPrice": 6500,
-      "createdAt": "2025-07-25T10:00:00.000Z"
-    },
-    {
-      "id": "bk4",
-      "ownerId": "u3",
-      "guardianId": "g2",
-      "petId": "p7",
-      "start": "2025-07-15",
-      "end": "2025-07-17",
-      "status": "COMPLETED",
-      "depositPaid": true,
-      "totalPrice": 13000,
-      "createdAt": "2025-07-01T10:00:00.000Z"
-    },
-    {
       "id": "rxnypf8qxba",
       "ownerId": "1",
       "guardianId": "2",
@@ -509,6 +461,20 @@
         "LARGE"
       ],
       "id": 1
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-10-01",
+      "end": "2025-10-15",
+      "acceptedSizes": ["SMALL","MEDIUM","LARGE"],
+      "id": 2
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-11-01",
+      "end": "2025-11-08",
+      "acceptedSizes": ["SMALL","MEDIUM"],
+      "id": 3
     }
   ],
   "users": [
@@ -782,6 +748,32 @@
       "location": "Buenos Aires",
       "avatarUrl": "https://i.pravatar.cc/160?img=57",
       "id": 18
+    }
+  ],
+  "favorites": [
+    {
+      "id": "7252a8c4-275d-4aa7-845d-b1577f6cc111",
+      "ownerId": "u1",
+      "guardianId": "2",
+      "createdAt": "2025-09-12T17:11:16.165Z"
+    },
+    {
+      "id": "7a4b9203-93f3-4413-9c9c-02a31d1a2df6",
+      "ownerId": "u1",
+      "guardianId": "g1",
+      "createdAt": "2025-09-12T17:11:58.148Z"
+    },
+    {
+      "id": "39096caf-7090-414e-8b59-4655a5a428f0",
+      "ownerId": "u1",
+      "guardianId": "g2",
+      "createdAt": "2025-09-12T17:12:01.590Z"
+    },
+    {
+      "id": "18cd7264-8245-41fd-9185-cfe2d1ddc5d7",
+      "ownerId": "u1",
+      "guardianId": "12",
+      "createdAt": "2025-09-12T17:12:02.587Z"
     }
   ]
 }

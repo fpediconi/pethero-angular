@@ -5,12 +5,16 @@ import { GuardianProfile } from '../shared/models/guardian';
 import { AuthService } from '../auth/auth.service';
 import { daysBetween, overlaps, validRange } from '../shared/utils/date.util';
 import { NotificationsService } from '../shared/services/notifications.service';
+import { AvailabilityService } from '../shared/services/availability.service';
+import { covers, overlap as overlapExclusive } from '../core/utils/date-range.util';
+import { firstValueFrom, of } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class BookingsService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private notifications = inject(NotificationsService);
+  private availability = inject(AvailabilityService);
 
   private _bookings = signal<Booking[]>([]);
   bookings = this._bookings;
@@ -71,6 +75,13 @@ export class BookingsService {
     return !this.listForOwner(ownerId).some(b => blocked.includes(b.status) && overlaps(b.start, b.end, start, end));
   }
 
+  // Helper: collision with occupied bookings using [start,end) semantics
+  hasOccupiedCollision(guardianId: string, range: { start: string; end: string }){
+    const blocked: BookingStatus[] = ['ACCEPTED','CONFIRMED','IN_PROGRESS','COMPLETED'];
+    const hit = this.listForGuardian(guardianId).some(b => blocked.includes(b.status) && overlapExclusive(b.start, b.end, range.start, range.end));
+    return of(hit);
+  }
+
   // Create request
   async request(payload: { guardian: GuardianProfile; petId: string; start: string; end: string }): Promise<Booking> {
     const error = validRange(payload.start, payload.end);
@@ -84,6 +95,13 @@ export class BookingsService {
     if (!this.isOwnerFree(String(user.id), payload.start, payload.end)) {
       throw new Error('Ya tiene una reserva que se superpone en ese período.');
     }
+
+    // Validación adicional: colisiones y cobertura por disponibilidad
+    const _collide = await firstValueFrom(this.hasOccupiedCollision(payload.guardian.id, { start: payload.start, end: payload.end }));
+    if (_collide) throw new Error('El guardián tiene reservas que se superponen en ese período.');
+    const _slots = await firstValueFrom(this.availability.listByGuardian(payload.guardian.id));
+    const _covers = (_slots || []).some(s => covers(s.startDate, s.endDate, payload.start, payload.end));
+    if (!_covers) throw new Error('El guardián no tiene disponibilidad para esas fechas.');
 
     const nights = daysBetween(payload.start, payload.end) || 1;
     const total = nights * (payload.guardian.pricePerNight || 0);
@@ -132,6 +150,12 @@ export class BookingsService {
     if (!this.isGuardianAvailable(b.guardianId, b.start, b.end)) {
       throw new Error('No puede aceptar dos reservas superpuestas.');
     }
+    // Cobertura por disponibilidad (best-effort con caché local)
+    try {
+      const slots = this.availability.slotsSig() || [];
+      const covered = (slots || []).some(s => s.guardianId === b.guardianId && covers(s.startDate, s.endDate, b.start, b.end));
+      if (!covered) throw new Error('No hay disponibilidad para cubrir esas fechas.');
+    } catch {}
     this._update(bookingId, { status: 'ACCEPTED' });
     this.notifications.notify(b.ownerId, `Tu solicitud fue aceptada por el guardián (${b.start} – ${b.end}).`);
   }

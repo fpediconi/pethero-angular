@@ -58,6 +58,10 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
           <span class="kpi">$ {{ guardianEarnings() | number:'1.0-0' }}</span>
           <span class="lbl">Ingresos est.</span>
         </div>
+        <div class="chip" *ngIf="isGuardian()">
+          <span class="kpi">{{ nextAvailability() ? (nextAvailability() | date:'mediumDate') : 'Sin disp.' }}</span>
+          <span class="lbl">Próxima disp.</span>
+        </div>
       </div>
     </div>
   </section>
@@ -407,18 +411,13 @@ export class HomePageComponent {
         error: () => { this.ratingCount.set(0); this.ratingAvg.set(0); }
       });
 
-      this.availability.listByGuardian(gid).subscribe({
-        next: slots => {
-          const now = Date.now();
-          const next = (slots || [])
-            .map(s => new Date(s.start))
-            .filter(d => !isNaN(d.getTime()) && d.getTime() >= now)
-            .sort((a,b) => a.getTime() - b.getTime())[0];
-          this.nextAvailability.set(next ? next.toISOString() : null);
-        },
+      const today = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const todayISO = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+      this.availability.findNextAvailability(gid, todayISO).subscribe({
+        next: (nextIso) => this.nextAvailability.set(nextIso),
         error: () => this.nextAvailability.set(null)
       });
     }
   }
 }
-

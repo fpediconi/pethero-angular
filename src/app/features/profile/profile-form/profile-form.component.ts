@@ -8,7 +8,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs/operators';
 import { CurrentProfileService } from '../../../shared/services/current-profile.service';
 import { GuardiansService } from '../../../guardians/guardians.service';
-import { AvailabilityService } from '../../../shared/services/availability.service';
 import { PetType } from '../../../shared/models/pet';
 
 @Component({
@@ -149,29 +148,7 @@ import { PetType } from '../../../shared/models/pet';
           <input id="price" type="number" min="0" step="1" [value]="pricePerNight() ?? ''" (input)="onPriceInput($event)" />
         </div>
 
-        <div class="field">
-          <label>Disponibilidad</label>
-          <div [formGroup]="newSlot" class="row">
-            <div class="field">
-              <label for="start">Desde</label>
-              <input id="start" type="date" formControlName="start" />
-            </div>
-            <div class="field">
-              <label for="end">Hasta</label>
-              <input id="end" type="date" formControlName="end" />
-            </div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn btn-ghost" (click)="addSlot()">Agregar rango</button>
-          </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
-            <span class="badge" *ngFor="let s of slots(); let i = index">
-              {{ s.start }} &rarr; {{ s.end }}
-              <button type="button" class="linklike" (click)="removeSlot(i)" style="margin-left:6px">x</button>
-            </span>
-          </div>
-          <div class="hint">Podés agregar múltiples rangos de fechas disponibles.</div>
-        </div>
+        <!-- Disponibilidad editada ahora desde la sección Mi disponibilidad -->
       </aside>
 
       
@@ -187,7 +164,6 @@ export class ProfileFormComponent implements OnInit {
   private profiles = inject(ProfileService);
   private currentProfile = inject(CurrentProfileService);
   private guardians = inject(GuardiansService);
-  private availability = inject(AvailabilityService);
 
   loading = signal(false);
   message = signal<string | null>(null);
@@ -199,8 +175,7 @@ export class ProfileFormComponent implements OnInit {
   guardianId = computed(() => String(this.auth.user()?.id || ''));
   pricePerNight = signal<number | null>(null);
   acceptedTypes = signal<PetType[]>([]);
-  slots = signal<{ start: string; end: string }[]>([]);
-  newSlot = this.fb.group({ start: [''], end: [''] });
+  // Disponibilidad removida del perfil (se gestiona en /guardian/availability)
 
   form = this.fb.group({
     id: [undefined as number | undefined],
@@ -258,10 +233,7 @@ export class ProfileFormComponent implements OnInit {
         this.pricePerNight.set((g as any).pricePerNight ?? null);
         this.acceptedTypes.set(g.acceptedTypes || []);
       });
-      this.availability.listByGuardian(id).subscribe(list => {
-        const items = (list || []).map(s => ({ start: s.start, end: s.end }));
-        this.slots.set(items);
-      });
+      // Disponibilidad se gestiona desde "Mi disponibilidad"
     }
   }
 
@@ -278,18 +250,7 @@ export class ProfileFormComponent implements OnInit {
     this.acceptedTypes.set(Array.from(next));
   }
 
-  addSlot(){
-    const v = this.newSlot.getRawValue();
-    if (!v.start || !v.end) return;
-    const list = this.slots();
-    this.slots.set([...list, { start: v.start, end: v.end }]);
-    this.newSlot.reset();
-  }
-
-  removeSlot(i: number){
-    const list = this.slots();
-    this.slots.set(list.filter((_, idx) => idx !== i));
-  }
+  // addSlot/removeSlot removidos
 
   onPriceInput(ev: Event){
     const el = ev.target as HTMLInputElement;
@@ -315,7 +276,7 @@ export class ProfileFormComponent implements OnInit {
         this.form.patchValue(p);
         this.original.set(p);
         this.currentProfile.setProfile(p);
-        // If guardian, persist guardian profile + availability
+        // If guardian, persist guardian profile
         if (this.isGuardian()){
           const guardianId = this.guardianId();
           const typedPrice = this.pricePerNight();
@@ -332,21 +293,11 @@ export class ProfileFormComponent implements OnInit {
             acceptedSizes: ['SMALL','MEDIUM','LARGE'] as any,
             city: p.location || ''
           } as any;
-          const slotPayload = this.slots().map(s => ({ guardianId, start: s.start, end: s.end, acceptedSizes: ['SMALL','MEDIUM','LARGE'] as any }));
           this.guardians.upsertProfile(gp).subscribe({
             next: () => {
-              this.availability.replaceForGuardian(guardianId, slotPayload).subscribe({
-                next: () => {
-                  this.loading.set(false);
-                  this.message.set('Perfil guardado');
-                  setTimeout(() => this.message.set(null), 2500);
-                },
-                error: (e) => {
-                  console.error(e);
-                  this.loading.set(false);
-                  this.message.set('Perfil guardado con advertencias en disponibilidad');
-                }
-              });
+              this.loading.set(false);
+              this.message.set('Perfil guardado');
+              setTimeout(() => this.message.set(null), 2500);
             },
             error: (e) => {
               console.error(e);

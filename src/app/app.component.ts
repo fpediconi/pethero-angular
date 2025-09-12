@@ -31,8 +31,10 @@ import { ChatService } from './chat/chat.service';
 
       <div class="links" [class.open]="menuOpen">
         <a routerLink="/guardians/search" routerLinkActive="active" *ngIf="isOwner()" (click)="closeMenus()">Guardianes</a>
+        <a routerLink="/guardian/availability" routerLinkActive="active" *ngIf="isGuardian()" (click)="closeMenus()">Mi disponibilidad</a>
         <a routerLink="/home" routerLinkActive="active" *ngIf="auth.isLoggedIn()" (click)="closeMenus()">Home</a>
         <a routerLink="/owners/pets" routerLinkActive="active" *ngIf="isOwner()" (click)="closeMenus()">Mis Mascotas</a>
+        <a routerLink="/owners/favorites" routerLinkActive="active" *ngIf="isOwner()" (click)="closeMenus()">Mis favoritos</a>
         <a routerLink="/bookings" routerLinkActive="active" *ngIf="auth.isLoggedIn()" (click)="closeMenus()">Reservas</a>
       </div>
 

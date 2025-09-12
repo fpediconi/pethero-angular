@@ -5,6 +5,8 @@ import { GuardiansService } from '../guardians.service';
 import { ChatService } from '../../chat/chat.service';
 import { GuardianProfile } from '../../shared/models/guardian';
 import { ReviewsService } from '../../reviews/reviews.service';
+import { FavoritesService } from '../../shared/services/favorites.service';
+import { AuthService } from '../../auth/auth.service';
 import { ReviewsPage } from '../../reviews/reviews.page';
 
 @Component({
@@ -28,6 +30,14 @@ import { ReviewsPage } from '../../reviews/reviews.page';
             <a class="btn primary" *ngIf="fromSearch()" [routerLink]="['/bookings/request', p.id]"
                [queryParams]="{ start: route.snapshot.queryParams['start'], end: route.snapshot.queryParams['end'], petId: route.snapshot.queryParams['petId'] }">Hacer reserva</a>
             <button class="btn" type="button" (click)="message(p.id)">Mandar mensaje</button>
+            <button class="btn" *ngIf="isOwner()" type="button" (click)="toggleFav(p.id)" [disabled]="busy()"
+                    [attr.aria-pressed]="isFav(p.id)"
+                    [attr.aria-label]="isFav(p.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="color:#ef4444">
+                <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1 4.22 2.44C11.09 5 12.76 4 14.5 4 17 4 19 6 19 8.5c0 3.78-3.4 6.86-8.55 11.54z"/>
+              </svg>
+              {{ isFav(p.id) ? 'Quitar' : 'Favorito' }}
+            </button>
             <a class="btn" *ngIf="fromSearch()" [routerLink]="['/guardians','search']"
                [queryParams]="route.snapshot.queryParams" [queryParamsHandling]="'merge'">Volver a la búsqueda</a>
           </div>
@@ -105,9 +115,12 @@ export class GuardianProfilePage {
   private service = inject(GuardiansService);
   private chat = inject(ChatService);
   private reviews = inject(ReviewsService);
+  private favorites = inject(FavoritesService);
+  private auth = inject(AuthService);
   profile = signal<GuardianProfile | null>(null);
   summary = signal({ avg: 0, count: 0 });
   fromSearch = signal(false);
+  busy = signal(false);
 
   ngOnInit(){
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -120,6 +133,8 @@ export class GuardianProfilePage {
       // Bridge: assign reactive summary signal to field
       this.summary = s as any;
     });
+    const u = this.auth.user();
+    if (u?.role === 'owner') this.favorites.ensureLoaded().subscribe();
   }
 
   message(guardianUserId: string){
@@ -129,5 +144,15 @@ export class GuardianProfilePage {
   scrollToReviews(){
     const el = document.getElementById('reviews-block');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  isOwner(){ return this.auth.user()?.role === 'owner'; }
+  isFav(guardianId: string){ return this.favorites.isFavorite(guardianId); }
+  toggleFav(guardianId: string){
+    this.busy.set(true);
+    this.favorites.toggle(guardianId).subscribe({
+      next: () => this.busy.set(false),
+      error: () => { this.busy.set(false); alert('No se pudo actualizar el favorito'); }
+    });
   }
 }
