@@ -1,9 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { AvailabilitySlot, AUTO_MERGE_SLOTS } from '../../core/models/availability.model';
+import { AvailabilityBlock, AvailabilityException, DailyMap } from '../../core/models/availability-daily.model';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { compareISO, covers, isValidRange } from '../../core/utils/date-range.util';
+import { capacityByDay, bookingsByDay, freeByDay, hasConsecutiveFreeDays, summarizeSpansFromDays, daysBetweenLocal } from '../../core/utils/daily-availability.util';
 
 // API DTO shape kept for compatibility with existing mock data
 type ApiAvailabilitySlot = {
@@ -211,6 +213,89 @@ export class AvailabilityService {
           .sort((a,b) => compareISO(a.startDate, b.startDate))[0];
         return future ? future.startDate : null;
       })
+    );
+  }
+
+  // ===== Daily-based API (non-breaking, reuses /availability with capacity) =====
+  listBlocks(guardianId: string){
+    return this.api.get<any[]>('/availability', { guardianId }).pipe(
+      map(list => (list || []).map(x => ({
+        id: String(x.id),
+        guardianId: String(x.guardianId),
+        start: x.start || x.startDate,
+        end: x.end || x.endDate,
+        // Regla actual: 1 reserva por día. Ignoramos valores mayores en mock.
+        capacity: 1,
+        recurrence: x.recurrence,
+        meta: x.meta,
+      }) as AvailabilityBlock))
+    );
+  }
+
+  listExceptions(guardianId: string){
+    return this.api.get<AvailabilityException[]>('/availability_exceptions', { guardianId }).pipe(
+      map(list => (list || []).map(x => ({ ...x, id: String((x as any).id) })))
+    );
+  }
+
+  listBookingsRaw(guardianId: string){
+    return this.api.get<any[]>('/bookings', { guardianId });
+  }
+
+  // Create/update blocks from day inputs
+  createBlock(input: { guardianId: string; startDay: string; endDayExcl: string; capacity?: number }){
+    const body = {
+      guardianId: input.guardianId,
+      start: `${input.startDay}T00:00:00Z`,
+      end: `${input.endDayExcl}T00:00:00Z`,
+      capacity: input.capacity ?? 1,
+    } as any;
+    return this.api.post<any>('/availability', body);
+  }
+  updateBlock(id: string, patch: { startDay?: string; endDayExcl?: string; capacity?: number }){
+    const body: any = {};
+    if (patch.startDay) body.start = `${patch.startDay}T00:00:00Z`;
+    if (patch.endDayExcl) body.end = `${patch.endDayExcl}T00:00:00Z`;
+    if (patch.capacity != null) body.capacity = patch.capacity;
+    return this.api.put<any>(`/availability/${id}`, body);
+  }
+  removeBlock(id: string){ return this.api.delete<void>(`/availability/${id}`); }
+
+  validateNoOverlapBlocks(candidate: { start: string; end: string }, existing: AvailabilityBlock[]): { ok: boolean; conflicts?: AvailabilityBlock[] }{
+    const conflicts = (existing || []).filter(b => (candidate.start < b.end) && (b.start < candidate.end));
+    return conflicts.length ? { ok:false, conflicts } : { ok:true };
+  }
+
+  computeDailyAvailability(params: { guardianId: string; startUTC: string; endUTC: string }): Observable<{ free: DailyMap; cap: DailyMap; occ: DailyMap }>{
+    const { guardianId, startUTC, endUTC } = params;
+    return forkJoin([
+      this.listBlocks(guardianId),
+      this.listExceptions(guardianId).pipe(catchError(() => of([]))),
+      this.listBookingsRaw(guardianId).pipe(catchError(() => of([]))),
+    ]).pipe(
+      map(([blocks, exceptions, bookings]) => {
+        const cap = capacityByDay(blocks, startUTC, endUTC, exceptions);
+        const occ = bookingsByDay(bookings, startUTC, endUTC);
+        const free = freeByDay(cap, occ);
+        return { free, cap, occ };
+      })
+    );
+  }
+
+  hasCoverageForRange(params: { guardianId: string; startDay: string; endDayExcl: string; petCount: number }): Observable<boolean> {
+    const { guardianId, startDay, endDayExcl, petCount } = params;
+    const startUTC = new Date(startDay + 'T00:00:00Z').toISOString();
+    const endUTC = new Date(endDayExcl + 'T00:00:00Z').toISOString();
+    return this.computeDailyAvailability({ guardianId, startUTC, endUTC }).pipe(
+      map(({ free }) => hasConsecutiveFreeDays(free, startDay, endDayExcl, petCount))
+    );
+  }
+
+  nextFreeSpan(guardianId: string, fromDay: string): Observable<{ start: string; end: string } | null> {
+    const startUTC = new Date(fromDay + 'T00:00:00Z').toISOString();
+    const endUTC = new Date(new Date(startUTC).getTime() + 60*24*60*60*1000).toISOString(); // scan next ~60 days
+    return this.computeDailyAvailability({ guardianId, startUTC, endUTC }).pipe(
+      map(({ free }) => summarizeSpansFromDays(free, fromDay, 1))
     );
   }
 }

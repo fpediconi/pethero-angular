@@ -374,6 +374,30 @@
       "depositPaid": true,
       "totalPrice": 3375,
       "createdAt": "2025-09-10T15:14:17.187Z"
+    },
+    {
+      "id": "miu3mso0g9",
+      "ownerId": "1",
+      "guardianId": "2",
+      "petId": "3",
+      "start": "2025-10-11",
+      "end": "2025-10-14",
+      "status": "CONFIRMED",
+      "depositPaid": true,
+      "totalPrice": 375,
+      "createdAt": "2025-09-12T19:48:23.514Z"
+    },
+    {
+      "id": "00cj1zzmuk7rp",
+      "ownerId": "1",
+      "guardianId": "2",
+      "petId": "3",
+      "start": "2025-10-16",
+      "end": "2025-10-18",
+      "status": "CONFIRMED",
+      "depositPaid": true,
+      "totalPrice": 250,
+      "createdAt": "2025-09-12T19:49:07.923Z"
     }
   ],
   "messages": [
@@ -449,32 +473,249 @@
       "id": "Nr9l7ir"
     }
   ],
-  "payments": [],
+  "payments": [
+    {
+      "bookingId": "miu3mso0g9",
+      "amount": 188,
+      "type": "DEPOSIT",
+      "status": "APPROVED",
+      "createdAt": "2025-09-18T16:24:24.879Z",
+      "id": 1
+    },
+    {
+      "bookingId": "00cj1zzmuk7rp",
+      "amount": 125,
+      "type": "DEPOSIT",
+      "status": "APPROVED",
+      "createdAt": "2025-09-18T16:24:41.774Z",
+      "id": 2
+    }
+  ],
+  "paymentVouchers": [
+    {
+      "id": "skl0713tq7h",
+      "bookingId": "miu3mso0g9",
+      "amount": 188,
+      "dueDate": "2025-09-20T15:58:25.371Z",
+      "status": "PAID",
+      "createdAt": "2025-09-18T15:58:25.371Z"
+    },
+    {
+      "id": "lp18jem02c",
+      "bookingId": "00cj1zzmuk7rp",
+      "amount": 125,
+      "dueDate": "2025-09-20T16:24:37.178Z",
+      "status": "PAID",
+      "createdAt": "2025-09-18T16:24:37.178Z"
+    }
+  ],
   "availability": [
     {
       "guardianId": "2",
-      "start": "2025-09-05",
-      "end": "2027-07-05",
+      "start": "2025-10-01",
+      "end": "2025-10-15",
+      "capacity": 2,
       "acceptedSizes": [
         "SMALL",
         "MEDIUM",
         "LARGE"
       ],
-      "id": 1
-    },
-    {
-      "guardianId": "2",
-      "start": "2025-10-01",
-      "end": "2025-10-15",
-      "acceptedSizes": ["SMALL","MEDIUM","LARGE"],
       "id": 2
     },
     {
       "guardianId": "2",
       "start": "2025-11-01",
       "end": "2025-11-08",
-      "acceptedSizes": ["SMALL","MEDIUM"],
+      "capacity": 1,
+      "acceptedSizes": [
+        "SMALL",
+        "MEDIUM"
+      ],
       "id": 3
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-09-23T00:00:00Z",
+      "end": "2025-09-24T00:00:00.000Z",
+      "capacity": 1,
+      "id": 4
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-09-23T00:00:00Z",
+      "end": "2025-09-24T00:00:00.000Z",
+      "capacity": 1,
+      "id": 5
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-09-13T00:00:00Z",
+      "end": "2025-09-14T00:00:00.000Z",
+      "capacity": 1,
+      "id": 6
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-10-07T00:00:00Z",
+      "end": "2025-10-08T00:00:00.000Z",
+      "capacity": 1,
+      "id": 7
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-10-09T00:00:00Z",
+      "end": "2025-10-10T00:00:00.000Z",
+      "capacity": 1,
+      "id": 8
+    },
+    {
+      "guardianId": "6",
+      "start": "2025-10-01T00:00:00Z",
+      "end": "2025-10-15T00:00:00Z",
+      "capacity": 1,
+      "id": 9
+    },
+    {
+      "guardianId": "2",
+      "start": "2025-10-20T00:00:00Z",
+      "end": "2025-10-24T00:00:00Z",
+      "capacity": 1,
+      "id": 10
+    }
+  ],
+  "availability_exceptions": [
+    {
+      "id": "53e5055d-364b-4982-bf7a-3d4b8df27048",
+      "guardianId": "2",
+      "start": "2025-09-23T00:00:00Z",
+      "end": "2025-09-24T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "5f2d4b48-7364-4ccc-86df-44969199af7f",
+      "guardianId": "2",
+      "start": "2025-09-19T00:00:00Z",
+      "end": "2025-09-20T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "7a8e7c45-c81e-4870-b9b8-62edc5c7cdf6",
+      "guardianId": "2",
+      "start": "2025-09-20T00:00:00Z",
+      "end": "2025-09-21T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "7be07e18-55f1-43a3-9275-e40cf4ebe54c",
+      "guardianId": "2",
+      "start": "2025-09-21T00:00:00Z",
+      "end": "2025-09-22T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "964d7273-2f24-4b31-8a7f-75801d4dab32",
+      "guardianId": "2",
+      "start": "2025-09-14T00:00:00Z",
+      "end": "2025-09-15T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "39ada6ea-db4c-447a-935b-5ba463bb2538",
+      "guardianId": "2",
+      "start": "2025-09-12T00:00:00Z",
+      "end": "2025-09-13T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "df043f44-fe45-489f-b54d-989fba805396",
+      "guardianId": "2",
+      "start": "2025-09-25T00:00:00Z",
+      "end": "2025-09-26T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "1a6b8b48-b6da-45cb-b02a-8b60fc2a19a1",
+      "guardianId": "2",
+      "start": "2025-09-27T00:00:00Z",
+      "end": "2025-09-28T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "e55b22a4-e6a6-4a75-a007-0e6cd4ee5b1f",
+      "guardianId": "2",
+      "start": "2025-09-28T00:00:00Z",
+      "end": "2025-09-29T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "8784af60-ede9-4f3c-bceb-5c8b4b7d542d",
+      "guardianId": "2",
+      "start": "2025-09-17T00:00:00Z",
+      "end": "2025-09-18T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "70fcda14-e62b-4be4-81e8-ff29b6c1b603",
+      "guardianId": "2",
+      "start": "2025-09-15T00:00:00Z",
+      "end": "2025-09-16T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "b02ba411-5948-4b3a-a0c3-5ada90b0a463",
+      "guardianId": "2",
+      "start": "2025-09-29T00:00:00Z",
+      "end": "2025-09-30T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "05b78c7e-759b-493c-aaf0-0340e188293f",
+      "guardianId": "2",
+      "start": "2025-09-30T00:00:00Z",
+      "end": "2025-10-01T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "af46c776-253d-450e-aa1a-fbc1fd4c51fa",
+      "guardianId": "2",
+      "start": "2025-10-01T00:00:00Z",
+      "end": "2025-10-02T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "5144c2d7-d0f7-460a-a4ff-9043b155cff9",
+      "guardianId": "2",
+      "start": "2025-10-02T00:00:00Z",
+      "end": "2025-10-03T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "4510dfe4-968a-4a1e-afa2-4f317bd3ba2d",
+      "guardianId": "2",
+      "start": "2025-10-04T00:00:00Z",
+      "end": "2025-10-05T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "637b93ba-1d2c-49c6-bc2d-cf5326a4e7ca",
+      "guardianId": "2",
+      "start": "2025-10-09T00:00:00Z",
+      "end": "2025-10-10T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "aefaba7d-22c9-49c6-b0ee-74edc2435efc",
+      "guardianId": "2",
+      "start": "2025-10-07T00:00:00Z",
+      "end": "2025-10-08T00:00:00.000Z",
+      "type": "closed"
+    },
+    {
+      "id": "2d3f5c89-0730-49e5-b03e-58764d8ed1a6",
+      "guardianId": "2",
+      "start": "2025-10-11T00:00:00Z",
+      "end": "2025-10-12T00:00:00.000Z",
+      "type": "closed"
     }
   ],
   "users": [

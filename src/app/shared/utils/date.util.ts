@@ -17,11 +17,12 @@ export function isPast(date: string | Date): boolean {
 }
 
 export function overlaps(aStart: string | Date, aEnd: string | Date, bStart: string | Date, bEnd: string | Date): boolean {
+  // Use [start, end) semantics to avoid treating back-to-back ranges as overlapping
   const as = parseISO(aStart).getTime();
   const ae = parseISO(aEnd).getTime();
   const bs = parseISO(bStart).getTime();
   const be = parseISO(bEnd).getTime();
-  return as <= be && bs <= ae;
+  return as < be && bs < ae;
 }
 
 export function validRange(start?: string, end?: string): string | null {

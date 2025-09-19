@@ -116,6 +116,8 @@ import { firstValueFrom } from 'rxjs';
     .city{ margin:0; color:#6b7280 }
     .bio{ margin:0 }
     .chips{ display:flex; gap:8px; flex-wrap:wrap }
+    /* Oculta etiqueta de disponibilidad para evitar confusión */
+    .chips .chip + .chip{ display:none }
     .chip{ padding:2px 10px; border-radius:999px; border:1px solid #e5e7eb; background:#f8fafc; font-size:.85rem; color:#334155 }
     .chip.ok{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46 }
     .badge.price{ background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:4px 10px; border-radius:999px; font-size:.85rem }
@@ -128,6 +130,8 @@ import { firstValueFrom } from 'rxjs';
     @media (max-width: 520px){ .form-grid{ grid-template-columns: 1fr } .results{ grid-template-columns: 1fr } .g-card{ grid-template-columns: 1fr } }
   `]
 })
+
+
 export class GuardianSearchPage {
   private fb = inject(FormBuilder);
   private guardians = inject(GuardiansService);
@@ -137,7 +141,7 @@ export class GuardianSearchPage {
   private reviews = inject(ReviewsService);
   private favorites = inject(FavoritesService);
   private availability = inject(AvailabilityService);
-
+  
   filters = this.fb.group({
     city:[''],
     start:['', Validators.required],
@@ -151,6 +155,21 @@ export class GuardianSearchPage {
   busyId = signal<string | null>(null);
   availMap = signal<Record<string, boolean>>({});
 
+  addDays(dateStr: string, days: number){
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10); // YYYY-MM-DD
+  }
+  foldCity(s: string){
+    return (s || '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')    // quita acentos
+      .replace(/\s+/g, ' ');             // colapsa espacios
+  }
+  
   ngOnInit(){
     const user = this.auth.user();
     if (user?.role === 'owner' && user.id != null) {
@@ -174,26 +193,45 @@ export class GuardianSearchPage {
     const pet = this.pets().find(p => String(p.id) === String(f.petId));
     const base = await this.guardians.search({ city: f.city, maxPrice: f.maxPrice });
     const prelim = (base || [])
+      // Compatibilidad por TIPO de mascota (sin forzar tamaño)
       .filter(g => pet ? (g.acceptedTypes || []).includes(pet.type as any) : true)
-      .filter(g => pet ? (g.acceptedSizes || []).includes(pet.size as any) : true)
+      // Precio: menor estrictamente al máximo
       .filter(g => {
         const maxOk = !f.maxPrice || (g.pricePerNight || 0) <= Number(f.maxPrice);
-        const q = (f.city || '').trim();
-        if (!q) return maxOk;
-        const city = (g.city || '').toString();
-        return maxOk && city.toLowerCase().includes(q.toLowerCase());
+        const q = this.foldCity(f.city || '');
+        const city = this.foldCity(g.city || '');
+        const cityOk = !q || city === q;      
+
+        return maxOk && cityOk;
       });
 
-    // Compute availability per guardian
+    // Compute availability per guardian (cubre todo el rango y SIN colisiones por reservas)
     const availability: Record<string, boolean> = {};
     for (const g of prelim){
       try {
-        const slots = await firstValueFrom(this.availability.listByGuardian(g.id));
-        const covered = (slots || []).some(s => covers(s.startDate, s.endDate, String(f.start), String(f.end)));
-        if (!covered) { availability[g.id] = false; continue; }
-        const collision = await firstValueFrom(this.bookings.hasOccupiedCollision(g.id, { start: String(f.start), end: String(f.end) }));
-        availability[g.id] = !collision;
-      } catch { availability[g.id] = false; }
+        const endExcl = this.addDays(String(f.end), 1);
+
+        const ok = await firstValueFrom(
+          this.availability.hasCoverageForRange({
+            guardianId: g.id,
+            startDay: String(f.start),
+            endDayExcl: endExcl,     
+            petCount: 1
+          })
+        );
+
+        // Extra guardado: sin reservas ocupadas en el rango
+        const collide = await firstValueFrom(
+          this.bookings.hasOccupiedCollision(g.id, {
+            start: String(f.start),
+            end: endExcl           
+          })
+        );
+
+        availability[g.id] = !!ok && !collide;
+      } catch {
+        availability[g.id] = false;
+      }
     }
 
     // Sort: available first, then by price
@@ -203,16 +241,17 @@ export class GuardianSearchPage {
       if (avA !== avB) return avB - avA;
       return (a.pricePerNight||0) - (b.pricePerNight||0);
     });
+    const onlyAvail = sorted.filter(g => availability[g.id]);
 
     this.availMap.set(availability);
     // Mostrar resultados aunque ninguno esté disponible; el chip indica el estado
     // Solo mostrar error si no hay resultados tras filtros básicos
-    if (!sorted.length) {
-      this.error.set('No hay resultados. Ajusta filtros y vuelve a intentar.');
+    if (!onlyAvail.length) {
+      this.error.set('No hay guardianes disponibles para ese período.');
     } else {
       this.error.set(null);
     }
-    this.results.set(sorted);
+    this.results.set(onlyAvail);
   }
 
   sum(id: string){
@@ -231,3 +270,6 @@ export class GuardianSearchPage {
 
   isAvail(guardianId: string){ return !!this.availMap()[guardianId]; }
 }
+
+
+

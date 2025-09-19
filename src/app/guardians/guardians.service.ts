@@ -7,7 +7,8 @@ import { of, forkJoin } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class GuardiansService {
   private api = inject(ApiService);
-  search(filters: any){ return this.api.get<GuardianProfile[]>('/guardians', filters).toPromise(); }
+  // Fetch all guardians; client applies business filters (city, price, types)
+  search(_filters?: any){ return this.api.get<GuardianProfile[]>('/guardians', undefined).toPromise(); }
   getProfile(id: string){ return this.api.get<GuardianProfile>(`/guardians/${id}`); }
 
   upsertProfile(profile: GuardianProfile){
