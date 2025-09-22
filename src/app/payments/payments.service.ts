@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { ApiService } from '../shared/services/api.service';
-import { Payment } from '../shared/models/payment';
+import { ApiService } from '@core/http';
+import { Payment } from '@shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class PaymentsService {

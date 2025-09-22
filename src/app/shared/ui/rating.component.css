@@ -1,0 +1,46 @@
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.star {
+  font-size: 1.6rem;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+  line-height: 1;
+}
+.star.filled {
+  color: #f59e0b;
+}
+.star:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.star:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.6);
+  outline-offset: 2px;
+}
+.val {
+  margin-left: 6px;
+  color: #374151;
+  font-size: 0.9rem;
+}
+@media (prefers-color-scheme: dark) {
+  .star {
+    color: #9ca3af;
+  }
+  .star.filled {
+    color: #fbbf24;
+  }
+  .val {
+    color: #e5e7eb;
+  }
+}

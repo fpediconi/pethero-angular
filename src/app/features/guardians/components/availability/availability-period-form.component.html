@@ -1,0 +1,22 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-grid">
+  <label>
+    <span>Desde</span>
+    <input type="date" formControlName="start" required />
+  </label>
+  <label>
+    <span>Hasta (excl.)</span>
+    <input type="date" formControlName="end" required />
+  </label>
+  <div class="actions">
+    <button type="button" class="btn" (click)="cancel.emit()">Cancelar</button>
+    <button
+      type="submit"
+      class="btn primary"
+      [disabled]="!!error || form.invalid"
+    >
+      Guardar
+    </button>
+  </div>
+  <p class="error" *ngIf="error">{{ error }}</p>
+  <p class="hint">Los rangos usan fin exclusivo [desde, hasta).</p>
+</form>

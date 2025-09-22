@@ -1,0 +1,32 @@
+<section class="card">
+  <header class="hdr">
+    <div>
+      <h2>Mi disponibilidad</h2>
+      <p class="hint">
+        Visualizá tu disponibilidad y reservas por día. Usá “Agregar período”
+        para publicar disponibilidad.
+      </p>
+    </div>
+    <div class="actions">
+      <button class="btn" (click)="openForm()">Agregar período</button>
+      <button class="btn primary" (click)="reload()">Actualizar</button>
+    </div>
+  </header>
+
+  <div *ngIf="loading()" class="loading">Cargando...</div>
+  <ph-availability-calendar3
+    *ngIf="!loading() && guardianId()"
+    [guardianId]="guardianId()!"
+  ></ph-availability-calendar3>
+</section>
+
+<section class="modal" *ngIf="showForm()">
+  <div class="modal-inner">
+    <h3>Agregar período de disponibilidad</h3>
+    <ph-availability-period-form
+      [guardianId]="guardianId()!"
+      (saved)="onSaved()"
+      (cancel)="closeForm()"
+    ></ph-availability-period-form>
+  </div>
+</section>

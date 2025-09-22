@@ -1,0 +1,14 @@
+<span
+  class="av"
+  [class.sm]="size === 'sm'"
+  [class.md]="size === 'md'"
+  [class.lg]="size === 'lg'"
+>
+  <img
+    *ngIf="srcClean()"
+    [src]="srcClean()"
+    [alt]="altText()"
+    (error)="src = ''"
+  />
+  <span *ngIf="!srcClean()">{{ initials() }}</span>
+</span>

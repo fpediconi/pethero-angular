@@ -1,0 +1,49 @@
+<div class="bar">
+  <div
+    class="tab"
+    *ngFor="let id of service.openWith()"
+    #tabEl
+    [attr.data-id]="id"
+    (click)="toggleWindow(id)"
+  >
+    <span class="name">{{ service.displayName(id) }}</span>
+    <span class="dot" *ngIf="service.unreadCountFor(id)() > 0"></span>
+    <button
+      (click)="close(id); $event.stopPropagation()"
+      class="linklike"
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </div>
+</div>
+
+<div class="windows">
+  <div
+    class="window"
+    *ngFor="let id of windowIds()"
+    [style.left.px]="tabLeft(id)"
+  >
+    <div class="win-head">
+      <span>Chat con {{ service.displayName(id) }}</span>
+      <button class="linklike" (click)="close(id)">×</button>
+    </div>
+    <div class="msgs" #msgsEl [attr.data-id]="id" (mouseenter)="markRead(id)">
+      <div
+        *ngFor="let m of service.conversationsWith(id)()"
+        [class]="'msg ' + (m.fromUserId === me() ? 'me' : 'other')"
+      >
+        {{ m.body }}
+      </div>
+    </div>
+    <div class="typing" *ngIf="isTyping(id)">Escribiendo…</div>
+    <form [formGroup]="forms[id]" (ngSubmit)="send(id)">
+      <input
+        placeholder="Escribe un mensaje"
+        formControlName="body"
+        (input)="onTyping(id)"
+      />
+      <button [disabled]="forms[id].invalid">Enviar</button>
+    </form>
+  </div>
+</div>

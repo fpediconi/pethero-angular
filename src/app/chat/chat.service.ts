@@ -1,11 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Message } from '../shared/models/message';
-import { AuthService } from '../auth/auth.service';
-import { GuardiansService } from '../guardians/guardians.service';
-import { BookingsService } from '../bookings/bookings.service';
+import { Message } from '@shared/models';
+import { AuthService } from '@core/auth';
+import { GuardiansService } from '@features/guardians/services';
+import { BookingsService } from '@features/bookings/services';
 import { ChatContact, ChatThread } from './chat.models';
-import { ProfileService } from '../shared/services/profile.service';
-import { ApiService } from '../shared/services/api.service';
+import { ProfileService } from '@core/profile';
+import { ApiService } from '@core/http';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -290,3 +290,4 @@ export class ChatService {
     } catch { return false; }
   }
 }
+

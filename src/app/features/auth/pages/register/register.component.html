@@ -1,0 +1,99 @@
+<div class="container">
+  <h1 class="title">Crear cuenta</h1>
+
+  <form class="card" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="field">
+      <label for="email">Email</label>
+      <input
+        id="email"
+        type="email"
+        inputmode="email"
+        autocomplete="email"
+        [class.ctrl-error]="invalid(email)"
+        formControlName="email"
+        placeholder="tu@email.com"
+      />
+      <div class="error fade-in" *ngIf="invalid(email)">
+        {{
+          email.errors?.["required"]
+            ? "El email es obligatorio"
+            : "Formato de email inválido"
+        }}
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="row">
+        <label class="grow" for="password">Contraseña</label>
+        <span class="hint">mín. 6 caracteres</span>
+      </div>
+      <input
+        id="password"
+        type="password"
+        autocomplete="new-password"
+        [class.ctrl-error]="invalid(password)"
+        formControlName="password"
+        placeholder="••••••••"
+      />
+      <div class="error fade-in" *ngIf="invalid(password)">
+        {{
+          password.errors?.["required"]
+            ? "La contraseña es obligatoria"
+            : "Mínimo 6 caracteres"
+        }}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Rol</label>
+      <ng-container *ngIf="!prelockedRole; else lockedRole">
+        <select [class.ctrl-error]="invalid(role)" formControlName="role">
+          <option value="owner">Dueño/a</option>
+          <option value="guardian">Guardian</option>
+        </select>
+      </ng-container>
+      <ng-template #lockedRole>
+        <div class="chip" title="Rol preseleccionado">
+          {{ role.value === "owner" ? "Dueño/a" : "Guardian" }} ·
+          preseleccionado
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="field">
+      <label for="displayName">Nombre para mostrar</label>
+      <input
+        id="displayName"
+        type="text"
+        autocomplete="nickname"
+        [class.ctrl-error]="invalid(displayName)"
+        formControlName="displayName"
+        placeholder="¿Cómo te mostramos?"
+      />
+      <div class="error fade-in" *ngIf="invalid(displayName)">
+        {{
+          displayName.errors?.["required"]
+            ? "Este campo es obligatorio"
+            : "Mínimo 2 caracteres"
+        }}
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="submit" [disabled]="form.invalid || loading()">
+        <span *ngIf="loading()" class="spinner"></span>
+        {{ loading() ? "Creando..." : "Crear cuenta" }}
+      </button>
+      <button
+        type="button"
+        class="ghost"
+        [disabled]="loading()"
+        (click)="form.reset(defaultValues)"
+      >
+        Limpiar
+      </button>
+    </div>
+
+    <p *ngIf="error()" class="global-error">{{ error() }}</p>
+  </form>
+</div>

@@ -1,17 +1,17 @@
-ï»¿import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../auth/auth.service';
-import { CurrentProfileService } from '../shared/services/current-profile.service';
-import { NotificationsService } from '../shared/services/notifications.service';
-import { BookingsService } from '../bookings/bookings.service';
-import { PetsService } from '../owners/pets/pets.service';
-import { ReviewsService } from '../reviews/reviews.service';
-import { AvailabilityService } from '../shared/services/availability.service';
-import { ChatService } from '../chat/chat.service';
-import { Booking } from '../shared/models/booking';
-import { ApiService } from '../shared/services/api.service';
-import { AvatarComponent } from '../shared/ui/avatar.component';
+import { AuthService } from '@core/auth';
+import { CurrentProfileService } from '@core/profile';
+import { NotificationsService } from '@core/notifications';
+import { BookingsService } from '@features/bookings/services';
+import { PetsService } from '@features/pets/services';
+import { ReviewsService } from '@features/reviews/services';
+import { AvailabilityService } from '@features/guardians/services';
+import { ChatService } from '@app/chat/chat.service';
+import { Booking } from '@features/bookings/models';
+import { ApiService } from '@core/http';
+import { AvatarComponent } from '@shared/ui';
 
 @Component({
   standalone: true,
@@ -60,7 +60,7 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
         </div>
         <div class="chip" *ngIf="isGuardian()">
           <span class="kpi">{{ nextAvailability() ? (nextAvailability() | date:'mediumDate') : 'Sin disp.' }}</span>
-          <span class="lbl">PrÃ³xima disp.</span>
+          <span class="lbl">Próxima disp.</span>
         </div>
       </div>
     </div>
@@ -73,7 +73,7 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
         <h3>Actividad</h3>
         <span class="dot" [class.ok]="unreadCount()===0"></span>
       </header>
-      <p class="muted">Mantente al dÃ­a con lo Ãºltimo</p>
+      <p class="muted">Mantente al día con lo último</p>
       <ul class="list" *ngIf="recentNotifications().length; else emptyN">
         <li *ngFor="let n of recentNotifications()">
           <span class="bullet"></span>
@@ -88,7 +88,7 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
       </ng-template>
     </article>
 
-    <!-- DueÃ±o: Mascotas + Reservas + Spark -->
+    <!-- Dueño: Mascotas + Reservas + Spark -->
     <article class="card glass" *ngIf="isOwner()">
       <header><h3>Mis Mascotas</h3><span class="badge">{{ petsCount() }}</span></header>
       <p class="muted">Gestiona tu manada</p>
@@ -99,7 +99,7 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
       <div class="spark" *ngIf="ownerSpark().length">
         <span class="bar" *ngFor="let h of ownerSpark(); let i = index" [style.height.%]="h" [style.animationDelay]="(i*60)+'ms'"></span>
       </div>
-      <small class="hint" *ngIf="ownerSpark().length">Ãšltimas {{ ownerSpark().length }} reservas (importe relativo)</small>
+      <small class="hint" *ngIf="ownerSpark().length">Últimas {{ ownerSpark().length }} reservas (importe relativo)</small>
     </article>
 
     <article class="card glass" *ngIf="isOwner()">
@@ -114,14 +114,14 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
           <div class="lbl">Pend. de pago</div>
         </div>
       </div>
-      <div class="next" *ngIf="nextOwnerBooking() as nb; else noNext">PrÃ³xima: <strong>{{ nb | date:'mediumDate' }}</strong></div>
-      <ng-template #noNext><div class="next muted">Sin prÃ³ximas reservas</div></ng-template>
+      <div class="next" *ngIf="nextOwnerBooking() as nb; else noNext">Próxima: <strong>{{ nb | date:'mediumDate' }}</strong></div>
+      <ng-template #noNext><div class="next muted">Sin próximas reservas</div></ng-template>
       <div class="quick"><a routerLink="/bookings" class="btn small">Ver reservas</a></div>
     </article>
 
-    <!-- GuardiÃ¡n: KPIs + Spark -->
+    <!-- Guardián: KPIs + Spark -->
     <article class="card glass" *ngIf="isGuardian()">
-      <header><h3>Panel GuardiÃ¡n</h3></header>
+      <header><h3>Panel Guardián</h3></header>
       <div class="grid3">
         <div class="pill">
           <div class="big">{{ guardianPending() }}</div>
@@ -140,21 +140,21 @@ import { AvatarComponent } from '../shared/ui/avatar.component';
       <div class="spark" *ngIf="guardianSpark().length">
         <span class="bar alt" *ngFor="let h of guardianSpark(); let i = index" [style.height.%]="h" [style.animationDelay]="(i*60)+'ms'"></span>
       </div>
-      <small class="hint" *ngIf="guardianSpark().length">Ãšltimas {{ guardianSpark().length }} reservas atendidas</small>
+      <small class="hint" *ngIf="guardianSpark().length">Últimas {{ guardianSpark().length }} reservas atendidas</small>
     </article>
 
     <article class="card glass" *ngIf="isGuardian()">
-      <header><h3>ReputaciÃ³n</h3></header>
+      <header><h3>Reputación</h3></header>
       <div class="rating">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="m17.562 21.5l-5.562-3l-5.562 3l1.062-6.187l-4.5-4.375l6.218-.906L12 4.5l2.781 5.532l6.219.906l-4.5 4.375z"/></svg>
         <div class="score">{{ ratingAvg() | number:'1.1-1' }}</div>
-        <div class="count">({{ ratingCount() }} reseÃ±as)</div>
+        <div class="count">({{ ratingCount() }} reseñas)</div>
       </div>
-      <div class="quick"><a routerLink="/reviews" class="btn small ghost in-card">Ver reseÃ±as</a></div>
+      <div class="quick"><a routerLink="/reviews" class="btn small ghost in-card">Ver reseñas</a></div>
     </article>
 
     <article class="card glass">
-      <header><h3>Accesos rÃ¡pidos</h3></header>
+      <header><h3>Accesos rápidos</h3></header>
       <div class="quick wrap">
         <a routerLink="/me/profile" class="btn chiplink">Perfil</a>
         <a routerLink="/bookings" class="btn chiplink">Reservas</a>
@@ -298,7 +298,7 @@ export class HomePageComponent {
   }
   roleLabel(){
     const r = this.user()?.role;
-    return r === 'guardian' ? 'GuardiÃ¡n' : r === 'owner' ? 'DueÃ±o/a' : 'â€”';
+    return r === 'guardian' ? 'Guardián' : r === 'owner' ? 'Dueño/a' : '—';
   }
   isOwner(){ return this.user()?.role === 'owner'; }
   isGuardian(){ return this.user()?.role === 'guardian'; }
@@ -356,7 +356,7 @@ export class HomePageComponent {
 
     // Rotate greeting per visit
     try {
-      const list = ['Hola', 'Â¡QuÃ© bueno verte!', 'Bienvenido/a de vuelta', 'Â¡Hey!', 'Â¿Listo/a para cuidar?'];
+      const list = ['Hola', '¡Qué bueno verte!', 'Bienvenido/a de vuelta', '¡Hey!', '¿Listo/a para cuidar?'];
       const last = sessionStorage.getItem('pethero_greet_last') || '';
       let pick = list[Math.floor(Math.random()*list.length)];
       if (pick === last) pick = list[(list.indexOf(pick)+1) % list.length];
@@ -421,3 +421,4 @@ export class HomePageComponent {
     }
   }
 }
+

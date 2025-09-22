@@ -1,0 +1,74 @@
+<div class="cal">
+  <div class="cal-head">
+    <button class="nav" (click)="prevMonth()" aria-label="Mes anterior">
+      <span aria-hidden="true">‹</span>
+    </button>
+    <div class="title">{{ monthLabel() }}</div>
+    <button class="nav" (click)="nextMonth()" aria-label="Mes siguiente">
+      <span aria-hidden="true">›</span>
+    </button>
+  </div>
+  <div class="weekdays">
+    <div *ngFor="let w of weekdays">{{ w }}</div>
+  </div>
+  <div class="grid">
+    <div
+      *ngFor="let d of gridDays()"
+      class="cell"
+      [class.muted]="!d.inMonth"
+      [class.closed]="d.state === 'closed'"
+      [class.reserved]="d.state === 'reserved'"
+      [class.open]="d.state === 'open'"
+      (click)="selectDay(d)"
+      [attr.aria-label]="d.key"
+    >
+      <div class="num">{{ d.dayNum }}</div>
+      <div class="labels" *ngIf="bookingLabels(d.key).length">
+        <div class="label" *ngFor="let l of bookingLabels(d.key)" [title]="l">
+          {{ l }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span class="dot open"></span> Disponible
+    <span class="dot reserved"></span> Reservado
+    <span class="dot closed"></span> No disponible
+  </div>
+  <div class="details" *ngIf="selectedDay() as day">
+    <h4>Detalle del día {{ day }}</h4>
+    <div *ngIf="bookingsForDay(day).length; else noBk">
+      <ul class="bk-list">
+        <li *ngFor="let b of bookingsForDay(day)">
+          <span class="tag">Reserva</span>
+          <div class="kv">
+            <span class="k">ID:</span><span class="v">{{ b.id }}</span>
+          </div>
+          <div class="kv">
+            <span class="k">Dueño:</span
+            ><span class="v">{{ ownerLabel(b) }}</span>
+          </div>
+          <div class="kv">
+            <span class="k">Mascota:</span
+            ><span class="v">{{ petLabel(b) }}</span>
+          </div>
+          <div class="kv">
+            <span class="k">Estado:</span
+            ><span class="v">{{ b?.status || "-" }}</span>
+          </div>
+          <div class="kv">
+            <span class="k">Desde:</span
+            ><span class="v">{{ b?.start | date: "mediumDate" }}</span>
+          </div>
+          <div class="kv">
+            <span class="k">Hasta:</span
+            ><span class="v">{{ b?.end | date: "mediumDate" }}</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <ng-template #noBk
+      ><div class="muted">Sin reservas en este día.</div></ng-template
+    >
+  </div>
+</div>

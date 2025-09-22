@@ -1,0 +1,154 @@
+<div
+  class="container"
+  style="max-width: 520px; margin: 48px auto; padding: 0 12px"
+>
+  <!-- App logo -->
+  <img
+    src="assets/logo-pet-hero.png"
+    alt="Pet Hero"
+    style="
+      display: block;
+      margin: 0 auto 16px;
+      max-width: 240px;
+      width: 60%;
+      height: auto;
+      filter: drop-shadow(0 6px 16px rgba(15, 23, 42, 0.15));
+    "
+  />
+
+  <form
+    [formGroup]="form"
+    (ngSubmit)="onSubmit()"
+    class="card"
+    style="
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+      background: #fff;
+    "
+  >
+    <!-- Email -->
+    <label style="font-weight: 600; color: #334155">Email</label>
+    <input
+      formControlName="email"
+      type="email"
+      placeholder="tu@email.com"
+      autocomplete="username"
+      style="
+        width: 100%;
+        height: 42px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0 12px;
+        outline: none;
+      "
+    />
+    <small
+      *ngIf="touched('email') && form.controls.email.invalid"
+      style="color: #dc2626"
+    >
+      {{
+        form.controls.email.hasError("required")
+          ? "El email es obligatorio"
+          : "Formato de email inválido"
+      }}
+    </small>
+
+    <!-- Password -->
+    <label style="font-weight: 600; color: #334155; margin-top: 6px"
+      >Contraseña</label
+    >
+    <input
+      formControlName="password"
+      type="password"
+      placeholder="••••••"
+      autocomplete="current-password"
+      style="
+        width: 100%;
+        height: 42px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0 12px;
+        outline: none;
+      "
+    />
+    <small
+      *ngIf="touched('password') && form.controls.password.invalid"
+      style="color: #dc2626"
+    >
+      {{
+        form.controls.password.hasError("required")
+          ? "La contraseña es obligatoria"
+          : "Mínimo 6 caracteres"
+      }}
+    </small>
+
+    <!-- Error general -->
+    <div
+      *ngIf="error()"
+      style="
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 8px 12px;
+        border-radius: 10px;
+      "
+    >
+      {{ error() }}
+    </div>
+
+    <!-- Botón ingresar -->
+    <button
+      type="submit"
+      [disabled]="form.invalid || loading()"
+      style="
+        margin-top: 6px;
+        height: 40px;
+        padding: 0 16px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        background: #0ea5b7;
+        color: white;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      "
+    >
+      <span *ngIf="!loading(); else spinner">Ingresar</span>
+    </button>
+
+    <ng-template #spinner>
+      <span class="sr-only">Cargando…</span>
+      <span
+        style="
+          width: 16px;
+          height: 16px;
+          border: 2px solid #fff;
+          border-right-color: transparent;
+          border-radius: 50%;
+          display: inline-block;
+          animation: spin 0.8s linear infinite;
+        "
+      ></span>
+    </ng-template>
+
+    <div style="margin-top: 8px; color: #475569">
+      ¿No tenés cuenta?
+      <a
+        [routerLink]="['/auth/register-owner']"
+        style="color: #0ea5b7; text-decoration: none"
+        >Crear cuenta (Dueño/a)</a
+      >
+      ·
+      <a
+        [routerLink]="['/auth/register-guardian']"
+        style="color: #0ea5b7; text-decoration: none"
+        >Crear cuenta (Guardian)</a
+      >
+    </div>
+  </form>
+</div>

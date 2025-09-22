@@ -1,0 +1,29 @@
+<ng-container *ngIf="!minimized(); else mini">
+  <div class="panel">
+    <div class="head">
+      <span>Tus chats</span>
+      <button class="minbtn" (click)="toggleMin()">Minimizar</button>
+    </div>
+    <ul>
+      <li *ngFor="let c of service.contacts()">
+        <span (click)="open(c.id)" style="flex: 1">{{
+          service.displayName(c.id)
+        }}</span>
+        <a
+          *ngIf="isOwner()"
+          [routerLink]="['/guardians', 'profile', c.id]"
+          (click)="$event.stopPropagation()"
+          aria-label="Ver perfil"
+          >Perfil</a
+        >
+        <span class="dot" *ngIf="service.unreadCountFor(c.id)() > 0"></span>
+      </li>
+      <li *ngIf="service.contacts().length === 0" style="color: #64748b">
+        Sin contactos todavía
+      </li>
+    </ul>
+  </div>
+</ng-container>
+<ng-template #mini>
+  <button class="bubble" (click)="toggleMin()">Tus chats</button>
+</ng-template>

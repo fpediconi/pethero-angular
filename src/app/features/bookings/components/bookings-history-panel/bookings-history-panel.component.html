@@ -1,0 +1,99 @@
+<div class="panel">
+  <h3 style="margin: 0 0 12px 0">Historial de reservas</h3>
+
+  <form [formGroup]="form" class="filters" (ngSubmit)="$event.preventDefault()">
+    <label>
+      Buscar (código, mascota, persona)
+      <input
+        type="search"
+        placeholder="Ej: Mishi, #R-1023, Ana..."
+        formControlName="q"
+      />
+    </label>
+
+    <label>
+      Desde
+      <input type="date" formControlName="from" />
+    </label>
+
+    <label>
+      Hasta
+      <input type="date" formControlName="to" />
+    </label>
+
+    <label>
+      Estado
+      <select formControlName="status">
+        <option value="ANY">Todos</option>
+        <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+      </select>
+    </label>
+
+    <div style="display: flex; gap: 8px; align-items: center">
+      <button type="button" class="btn" (click)="resetFilters()">
+        Limpiar
+      </button>
+      <button type="button" class="btn primary" (click)="exportCsv()">
+        Exportar CSV
+      </button>
+    </div>
+  </form>
+
+  <table class="table" *ngIf="items().length; else empty">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Periodo</th>
+        <th *ngIf="roleView() === 'OWNER'">Guardián</th>
+        <th *ngIf="roleView() === 'GUARDIAN'">Dueño</th>
+        <th>Mascota</th>
+        <th>Estado</th>
+        <th>Total</th>
+        <th style="width: 1%"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let r of items(); trackBy: track">
+        <td>{{ r.code ?? r.id }}</td>
+        <td>
+          {{ r.startDate | date: "MM/dd/yy" }} -
+          {{ r.endDate | date: "MM/dd/yy" }}
+        </td>
+        <td *ngIf="roleView() === 'OWNER'">{{ r.guardianName }}</td>
+        <td *ngIf="roleView() === 'GUARDIAN'">{{ r.ownerName }}</td>
+        <td>{{ r.petName || "—" }}</td>
+        <td>
+          <span class="badge {{ r.status }}">{{ r.status }}</span>
+        </td>
+        <td>{{ r.total | currency: "USD" : "symbol" : "1.0-0" }}</td>
+        <td class="actions">
+          <button class="btn" (click)="viewProfile.emit(r)">Ver perfil</button>
+          <button
+            class="btn"
+            *ngIf="r.status === 'CONFIRMED'"
+            (click)="cancel.emit(r)"
+          >
+            Cancelar
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #empty>
+    <div style="padding: 20px; color: #666">
+      No se encontraron reservas con esos filtros.
+    </div>
+  </ng-template>
+
+  <div class="pager">
+    <span>Página {{ page() + 1 }} / {{ totalPages() }}</span>
+    <button (click)="prev()" [disabled]="page() === 0">Anterior</button>
+    <button (click)="next()" [disabled]="page() + 1 >= totalPages()">
+      Siguiente
+    </button>
+    <select [value]="pageSize()" (change)="onPageSizeChange($event)">
+      <option *ngFor="let s of pageSizes" [value]="s">{{ s }}/pág</option>
+    </select>
+  </div>
+</div>

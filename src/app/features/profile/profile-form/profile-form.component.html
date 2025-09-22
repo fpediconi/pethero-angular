@@ -1,0 +1,178 @@
+<div class="wrapper">
+  <div class="header card">
+    <div class="profile">
+      <div class="avatar-lg" aria-hidden="true">
+        <img *ngIf="avatarUrl() as a" [src]="a" alt="Avatar" />
+        <span *ngIf="!avatarUrl()">{{ initials() }}</span>
+      </div>
+      <div>
+        <h1 class="title">
+          {{ form.get("displayName")?.value || "Tu nombre" }}
+        </h1>
+        <p class="subtitle">{{ auth.user()?.email }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <form class="card" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <h2>Información personal</h2>
+      <p class="muted">Actualiza cómo te verán otros usuarios.</p>
+
+      <div class="row">
+        <div class="field">
+          <label for="displayName">Nombre para mostrar</label>
+          <input
+            id="displayName"
+            formControlName="displayName"
+            placeholder="Ej. Ana Pérez"
+            autocomplete="name"
+          />
+          <div
+            class="error"
+            *ngIf="submitted() && form.get('displayName')?.hasError('required')"
+          >
+            Este campo es obligatorio.
+          </div>
+          <div
+            class="error"
+            *ngIf="
+              submitted() && form.get('displayName')?.hasError('minlength')
+            "
+          >
+            Mínimo 2 caracteres.
+          </div>
+        </div>
+        <div class="field">
+          <label for="phone">Teléfono</label>
+          <input
+            id="phone"
+            formControlName="phone"
+            placeholder="Ej. +54 9 11 1234-5678"
+            inputmode="tel"
+            autocomplete="tel"
+          />
+          <div class="hint">Formato flexible. Incluye código de área.</div>
+          <div
+            class="error"
+            *ngIf="submitted() && form.get('phone')?.hasError('pattern')"
+          >
+            Solo números, espacios y + (mín. 6).
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="location">Ubicación</label>
+          <input
+            id="location"
+            formControlName="location"
+            placeholder="Ciudad, País"
+            autocomplete="address-level2"
+          />
+        </div>
+        <div class="field">
+          <label for="avatarUrl">Avatar URL</label>
+          <input
+            id="avatarUrl"
+            formControlName="avatarUrl"
+            placeholder="https://..."
+          />
+          <div class="hint">Pega un enlace a una imagen cuadrada.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="bio">Bio</label>
+        <textarea
+          id="bio"
+          formControlName="bio"
+          placeholder="Contá algo sobre vos, experiencias con mascotas, etc."
+        ></textarea>
+        <div class="hint">{{ bioLength() }}/280 caracteres</div>
+      </div>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          (click)="reset()"
+          [disabled]="loading()"
+        >
+          Restablecer
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="form.invalid || loading()"
+        >
+          <span *ngIf="loading()" class="saving" aria-hidden="true"></span>
+          <span>{{ loading() ? "Guardando..." : "Guardar cambios" }}</span>
+        </button>
+      </div>
+    </form>
+
+    <aside class="card preview">
+      <h2>Vista previa</h2>
+      <div class="avatar-preview">
+        <img *ngIf="avatarUrl() as a" [src]="a" alt="Vista previa de avatar" />
+        <span *ngIf="!avatarUrl()" class="kbd">Sin imagen</span>
+      </div>
+      <div>
+        <div>
+          <strong>{{ form.get("displayName")?.value || "Tu nombre" }}</strong>
+        </div>
+        <div class="muted">
+          {{ form.get("location")?.value || "Ubicación" }}
+        </div>
+        <p class="muted">
+          {{ form.get("bio")?.value || "Tu bio aparecerá aquí." }}
+        </p>
+      </div>
+    </aside>
+
+    <!-- Guardian settings -->
+    <aside class="card preview" *ngIf="isGuardian()">
+      <h2>Configuración de guardián</h2>
+      <div class="field">
+        <label>Tipos de mascotas</label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <label
+            ><input
+              type="checkbox"
+              [checked]="acceptedTypes().includes('DOG')"
+              (change)="toggleType('DOG', $event)"
+            />
+            Perros</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              [checked]="acceptedTypes().includes('CAT')"
+              (change)="toggleType('CAT', $event)"
+            />
+            Gatos</label
+          >
+        </div>
+        <div class="hint">Elegí qué tipos aceptás.</div>
+      </div>
+
+      <div class="field">
+        <label for="price">Tarifa por noche (USD)</label>
+        <input
+          id="price"
+          type="number"
+          min="0"
+          step="1"
+          [value]="pricePerNight() ?? ''"
+          (input)="onPriceInput($event)"
+        />
+      </div>
+
+      <!-- Disponibilidad editada ahora desde la sección Mi disponibilidad -->
+    </aside>
+  </div>
+
+  <div *ngIf="message()" class="toast">{{ message() }}</div>
+</div>

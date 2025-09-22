@@ -4,8 +4,8 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient , withInterceptors } from '@angular/common/http';
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
-import { authTokenInterceptor } from './app/shared/services/auth-token.interceptor';
-import { errorInterceptor } from './app/shared/services/error-handler.interceptor';
+import { authTokenInterceptor } from '@core/auth';
+import { errorInterceptor } from '@core/http';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -13,3 +13,5 @@ bootstrapApplication(AppComponent, {
     provideHttpClient(withInterceptors([authTokenInterceptor, errorInterceptor])),
   ]
 }).catch(err => console.error(err));
+
+

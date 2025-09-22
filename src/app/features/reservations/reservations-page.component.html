@@ -1,0 +1,70 @@
+<section class="header" *ngIf="role() as r">
+  <div>
+    <h1>Historial de reservas</h1>
+    <p class="subtitle">
+      Revisa tus servicios {{ r === "OWNER" ? "solicitados" : "prestados" }} con
+      filtros avanzados.
+    </p>
+  </div>
+  <button
+    type="button"
+    class="btn"
+    [disabled]="exporting() || loading()"
+    (click)="onExport()"
+  >
+    <span *ngIf="!exporting(); else exportingTpl">Exportar CSV</span>
+  </button>
+</section>
+
+<ng-template #exportingTpl><span>Exportando...</span></ng-template>
+
+<div class="alert" *ngIf="error()">{{ error() }}</div>
+<div class="alert info" *ngIf="!error() && !loading() && !total()">
+  No hay reservas registradas todav�a.
+</div>
+
+<ph-reservations-filters
+  [statuses]="statusOptions"
+  [value]="filters()"
+  (search)="onApplyFilters($event)"
+  (clear)="onClearFilters()"
+></ph-reservations-filters>
+
+<div class="summary" *ngIf="total()">
+  <span>Resultados: {{ total() }} (mostrando {{ rangeLabel() }})</span>
+  <div class="pager">
+    <button
+      type="button"
+      class="btn ghost"
+      (click)="goPrev()"
+      [disabled]="page() <= 1 || loading()"
+    >
+      Anterior
+    </button>
+    <span>P�gina {{ page() }} de {{ totalPages() }}</span>
+    <button
+      type="button"
+      class="btn ghost"
+      (click)="goNext()"
+      [disabled]="page() >= totalPages() || loading()"
+    >
+      Siguiente
+    </button>
+    <label>
+      <span>Tama�o</span>
+      <select [value]="pageSize()" (change)="onPageSizeChange($event)">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">
+          {{ size }}
+        </option>
+      </select>
+    </label>
+  </div>
+</div>
+
+<ph-reservations-table
+  [items]="items()"
+  [role]="role() || 'OWNER'"
+  [loading]="loading()"
+  (view)="onView($event)"
+  (cancel)="onCancel($event)"
+></ph-reservations-table>

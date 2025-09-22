@@ -1,0 +1,18 @@
+<div class="stars" role="radiogroup" [attr.aria-label]="ariaLabel">
+  <button
+    *ngFor="let s of stars()"
+    type="button"
+    class="star"
+    [class.filled]="s <= value"
+    [disabled]="readonly"
+    role="radio"
+    [attr.aria-checked]="s === value"
+    [attr.aria-label]="'Calificar con ' + s + ' estrella' + (s > 1 ? 's' : '')"
+    (click)="onSelect(s)"
+    (keydown.enter)="onSelect(s)"
+    (keydown.space)="onSelect(s)"
+  >
+    &#9733;
+  </button>
+  <span *ngIf="showValue" class="val">{{ value }}/5</span>
+</div>
