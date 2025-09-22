@@ -3,13 +3,15 @@ export type HistoryStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'CANCELLED' | 'FI
 
 export interface BookingSummary {
   id: string;
-  code?: string;                 // opcional, si tienen un número de reserva
+  code?: string;                 // opcional, si tienen un nï¿½mero de reserva
   startDate: string;             // ISO
   endDate: string;               // ISO
   nights?: number;
   petName?: string;
-  ownerName: string;
-  guardianName: string;
+  guardianId?: string;
+  guardianName?: string;
+  ownerId?: string;
+  ownerName?: string;
   total: number;
   status: HistoryStatus;
   createdAt?: string;            // ISO
@@ -21,8 +23,8 @@ export interface HistoryQuery {
   status?: HistoryStatus | 'ANY';
   from?: string;     // ISO date (inclusive)
   to?: string;       // ISO date (inclusive)
-  q?: string;        // texto libre: mascota, código, nombres, etc.
-  roleView: 'GUARDIAN' | 'OWNER'; // quién mira la página
+  q?: string;        // texto libre: mascota, cï¿½digo, nombres, etc.
+  roleView: 'GUARDIAN' | 'OWNER'; // quiï¿½n mira la pï¿½gina
 }
 
 export interface Paged<T> {

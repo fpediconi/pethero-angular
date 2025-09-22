@@ -1,0 +1,145 @@
+<section class="hero" *ngIf="user() as u">
+    <div class="hero-bg"></div>
+    <div class="hero-inner">
+      <div class="identity">
+        <span class="ring">
+          <img src="assets/logo-pet-hero.png"
+         alt="Pet Hero"
+         style="display:block;margin:0 auto 16px;max-width:240px;width:60%;height:auto;filter: drop-shadow(0 6px 16px rgba(15,23,42,.15));"/>
+        </span>
+        <div>
+          <h1>{{ greet() }}, {{ displayName() }}</h1>
+          <p class="subtitle">Tu panel de control PetHero</p>
+          <div class="role-chip">{{ roleLabel() }}</div>
+        </div>
+      </div>
+      <div class="cta">
+        <a routerLink="/bookings" class="btn primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 15H5V10h14z"/></svg>
+          Reservas
+        </a>
+        <a *ngIf="isOwner()" routerLink="/guardians/search" class="btn small ghost in-card">Buscar guardianes</a>
+        <a *ngIf="isGuardian()" routerLink="/me/profile" class="btn small ghost in-card">Editar perfil</a>
+      </div>
+      <div class="stats">
+        <div class="chip">
+          <span class="kpi">{{ unreadCount() }}</span>
+          <span class="lbl">Notificaciones</span>
+        </div>
+        <div class="chip">
+          <span class="kpi">{{ unreadMsgs() }}</span>
+          <span class="lbl">Mensajes</span>
+        </div>
+        <div class="chip" *ngIf="isOwner()">
+          <span class="kpi">{{ petsCount() }}</span>
+          <span class="lbl">Mascotas</span>
+        </div>
+        <div class="chip" *ngIf="isGuardian()">
+          <span class="kpi">$ {{ guardianEarnings() | number:'1.0-0' }}</span>
+          <span class="lbl">Ingresos est.</span>
+        </div>
+        <div class="chip" *ngIf="isGuardian()">
+          <span class="kpi">{{ nextAvailability() ? (nextAvailability() | date:'mediumDate') : 'Sin disp.' }}</span>
+          <span class="lbl">Próxima disp.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="deck">
+    <!-- Actividad -->
+    <article class="card glass">
+      <header>
+        <h3>Actividad</h3>
+        <span class="dot" [class.ok]="unreadCount()===0"></span>
+      </header>
+      <p class="muted">Mantente al día con lo último</p>
+      <ul class="list" *ngIf="recentNotifications().length; else emptyN">
+        <li *ngFor="let n of recentNotifications()">
+          <span class="bullet"></span>
+          <div>
+            <div class="msg">{{ n.message }}</div>
+            <div class="time">{{ n.createdAt | date:'short' }}</div>
+          </div>
+        </li>
+      </ul>
+      <ng-template #emptyN>
+        <div class="empty">Sin novedades recientes</div>
+      </ng-template>
+    </article>
+
+    <!-- Dueño: Mascotas + Reservas + Spark -->
+    <article class="card glass" *ngIf="isOwner()">
+      <header><h3>Mis Mascotas</h3><span class="badge">{{ petsCount() }}</span></header>
+      <p class="muted">Gestiona tu manada</p>
+      <div class="quick">
+        <a routerLink="/owners/pets" class="btn small">Ver mascotas</a>
+        <a routerLink="/guardians/search" class="btn small ghost in-card">Buscar guardianes</a>
+      </div>
+      <div class="spark" *ngIf="ownerSpark().length">
+        <span class="bar" *ngFor="let h of ownerSpark(); let i = index" [style.height.%]="h" [style.animationDelay]="(i*60)+'ms'"></span>
+      </div>
+      <small class="hint" *ngIf="ownerSpark().length">Últimas {{ ownerSpark().length }} reservas (importe relativo)</small>
+    </article>
+
+    <article class="card glass" *ngIf="isOwner()">
+      <header><h3>Resumen de Reservas</h3></header>
+      <div class="grid2">
+        <div class="pill">
+          <div class="big">{{ ownerActive() }}</div>
+          <div class="lbl">Activas</div>
+        </div>
+        <div class="pill warn">
+          <div class="big">{{ ownerPendingPay() }}</div>
+          <div class="lbl">Pend. de pago</div>
+        </div>
+      </div>
+      <div class="next" *ngIf="nextOwnerBooking() as nb; else noNext">Próxima: <strong>{{ nb | date:'mediumDate' }}</strong></div>
+      <ng-template #noNext><div class="next muted">Sin próximas reservas</div></ng-template>
+      <div class="quick"><a routerLink="/bookings" class="btn small">Ver reservas</a></div>
+    </article>
+
+    <!-- Guardián: KPIs + Spark -->
+    <article class="card glass" *ngIf="isGuardian()">
+      <header><h3>Panel Guardián</h3></header>
+      <div class="grid3">
+        <div class="pill">
+          <div class="big">{{ guardianPending() }}</div>
+          <div class="lbl">Pendientes</div>
+        </div>
+        <div class="pill">
+          <div class="big">{{ guardianActive() }}</div>
+          <div class="lbl">Activas</div>
+        </div>
+        <div class="pill ok">
+          <div class="big">{{ guardianCompleted() }}</div>
+          <div class="lbl">Finalizadas</div>
+        </div>
+      </div>
+      <div class="money">Ingresos estimados <strong>$ {{ guardianEarnings() | number:'1.0-0' }}</strong></div>
+      <div class="spark" *ngIf="guardianSpark().length">
+        <span class="bar alt" *ngFor="let h of guardianSpark(); let i = index" [style.height.%]="h" [style.animationDelay]="(i*60)+'ms'"></span>
+      </div>
+      <small class="hint" *ngIf="guardianSpark().length">Últimas {{ guardianSpark().length }} reservas atendidas</small>
+    </article>
+
+    <article class="card glass" *ngIf="isGuardian()">
+      <header><h3>Reputación</h3></header>
+      <div class="rating">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="m17.562 21.5l-5.562-3l-5.562 3l1.062-6.187l-4.5-4.375l6.218-.906L12 4.5l2.781 5.532l6.219.906l-4.5 4.375z"/></svg>
+        <div class="score">{{ ratingAvg() | number:'1.1-1' }}</div>
+        <div class="count">({{ ratingCount() }} reservas)</div>
+      </div>
+      <div class="quick"><a routerLink="/reviews" class="btn small ghost in-card">Ver reservas</a></div>
+    </article>
+
+    <article class="card glass">
+      <header><h3>Accesos rápidos</h3></header>
+      <div class="quick wrap">
+        <a routerLink="/me/profile" class="btn chiplink">Perfil</a>
+        <a routerLink="/bookings" class="btn chiplink">Reservas</a>
+        <a *ngIf="isOwner()" routerLink="/owners/pets" class="btn chiplink">Mis mascotas</a>
+        <a *ngIf="isOwner()" routerLink="/guardians/search" class="btn chiplink">Buscar guardianes</a>
+      </div>
+    </article>
+  </section>

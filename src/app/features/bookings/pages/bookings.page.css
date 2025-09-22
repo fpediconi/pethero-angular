@@ -1,0 +1,20 @@
+.wrap{ display:grid; gap:16px }
+    .title{ margin:0 }
+    .section{ color:#374151; margin: 4px 0 }
+    .grid{ display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .booking{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; box-shadow:0 1px 2px rgba(0,0,0,.04) }
+    .booking.muted{ opacity: .9; }
+    .row{ display:flex; justify-content:space-between; align-items:center; margin: 6px 0 }
+    .row.header{ margin-top:0 }
+    .lbl{ color:#6b7280 }
+    .chip{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:.8rem; border:1px solid #e5e7eb; color:#374151 }
+    .chip.status{ background:#eef2ff; border-color:#c7d2fe; color:#3730a3 }
+    .chip.status.warn{ background:#fff7ed; border-color:#fed7aa; color:#9a3412 }
+    .chip.pay{ background:#f1f5f9; border-color:#e2e8f0; color:#0f172a }
+    .chip.pay.ok{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46 }
+    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap }
+    button{ padding:6px 10px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer }
+    .primary{ background:#2563eb; color:white; border-color:#1d4ed8 }
+    .danger{ background:#ef4444; color:white; border-color:#dc2626 }
+    .btnlink{ display:inline-flex; align-items:center; padding:6px 10px; border-radius:8px; border:1px solid #d1d5db; text-decoration:none; color:#111827; background:#fff }
+    .empty{ text-align:center; color:#6b7280 }

@@ -89,3 +89,14 @@
   color: #fff;
   border-color: #2363eb;
 }
+.pager button,
+.btn {
+  color: #111;          /* texto oscuro por defecto */
+  font-size: 14px;      /* por si algún reset lo puso en 0 */
+  line-height: 1.2;
+}
+
+.btn.primary {
+  color: #fff;
+}
+.actions .btn { white-space: nowrap; }

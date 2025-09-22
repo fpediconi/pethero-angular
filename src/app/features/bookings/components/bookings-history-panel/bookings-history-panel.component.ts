@@ -15,11 +15,12 @@ import { BookingsHistoryService } from "@features/bookings/services";
 import { BookingSummary, HistoryQuery, HistoryStatus } from "@features/bookings/models";
 import { exportBookingsCsv } from "@features/bookings/utils";
 import { debounceTime } from "rxjs/operators";
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: "ph-bookings-history-panel",
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   styleUrls: ["./bookings-history-panel.component.css"],
   templateUrl: "./bookings-history-panel.component.html",
 })
@@ -30,7 +31,7 @@ export class BookingsHistoryPanelComponent {
   // QUIÉN VE (define columnas)
   roleView = input.required<"GUARDIAN" | "OWNER">();
 
-  // Eventos para enganchar acciones del host (opcional)
+  // Eventos para enganchar acciones del host 
   @Output() viewProfile = new EventEmitter<BookingSummary>();
   @Output() cancel = new EventEmitter<BookingSummary>();
 
@@ -63,22 +64,36 @@ export class BookingsHistoryPanelComponent {
   );
 
   constructor() {
-    // Búsqueda inicial
-    this.load();
-
     // Rebuscar ante cambios de filtros
     this.form.valueChanges.pipe(debounceTime(250)).subscribe(() => {
       this._page.set(0);
-      this.load();
+      this.loadIfReady();
     });
 
     // Rebuscar ante cambios de página/tamaño
     effect(() => {
       void this._page();
       void this._pageSize();
-      this.load();
+      this.loadIfReady();
+    });
+
+    effect(() => {
+      try {
+        void this.roleView();
+        this._page.set(0);
+        this.loadIfReady();
+      } catch { /* todavía no hay input; ignorar */ }
     });
   }
+
+  private loadIfReady() {
+    let role: 'OWNER'|'GUARDIAN';
+    try {
+      role = this.roleView();   // solo sigue si ya está el input
+    } catch { return; }
+    this.load();
+  }
+
 
   private buildQuery(): HistoryQuery {
     const f = this.form.getRawValue();

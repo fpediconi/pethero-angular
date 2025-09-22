@@ -67,14 +67,14 @@
         </td>
         <td>{{ r.total | currency: "USD" : "symbol" : "1.0-0" }}</td>
         <td class="actions">
-          <button class="btn" (click)="viewProfile.emit(r)">Ver perfil</button>
-          <button
+          <a
             class="btn"
-            *ngIf="r.status === 'CONFIRMED'"
-            (click)="cancel.emit(r)"
+            [routerLink]="roleView() === 'OWNER'
+              ? ['/guardians', 'profile', r.guardianId]
+              : ['/owners', 'profile', r.ownerId]"
           >
-            Cancelar
-          </button>
+            Ver perfil
+          </a>
         </td>
       </tr>
     </tbody>

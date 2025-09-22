@@ -1,0 +1,78 @@
+<ng-container *ngIf="user() as u">
+    <div *ngIf="u.role === 'owner'" class="wrap">
+      <h2 class="title">Mis Reservas</h2>
+      <section>
+        <h3 class="section">Activas</h3>
+        <div class="grid" *ngIf="ownerActive().length; else noActiveOwner">
+          <article class="booking" *ngFor="let b of ownerActive()">
+            <div class="row header">
+              <span class="chip status">{{ statusLabel(b) }}</span>
+              <span class="chip pay" [class.ok]="b.depositPaid">{{ b.depositPaid ? 'PAGADO' : 'SIN PAGAR' }}</span>
+            </div>
+            <div class="row">
+              <div><span class="lbl">Periodo:</span> {{ b.start | date:'shortDate' }} - {{ b.end | date:'shortDate' }}</div>
+              <div><span class="lbl">Total:</span> &#36;{{ b.totalPrice || '-' }}</div>
+            </div>
+            <div class="actions">
+              <button class="danger" (click)="cancel(b)">Cancelar</button>
+              <button class="primary" *ngIf="!b.depositPaid" (click)="pay(b)">Pagar</button>
+              <a class="btnlink" [routerLink]="['/guardians','profile', b.guardianId]">Ver perfil del guardián</a>
+            </div>
+          </article>
+        </div>
+        <ng-template #noActiveOwner><div class="empty card">No tienes reservas activas.</div></ng-template>
+      </section>
+      <div style="margin-top:24px">
+        <ph-bookings-history-panel
+            [roleView]="'OWNER'">
+        </ph-bookings-history-panel>
+      </div>
+    </div>
+
+    <div *ngIf="u.role === 'guardian'" class="wrap">
+      <h2 class="title">Reservas (Guardián)</h2>
+      <section>
+        <h3 class="section">Solicitudes Pendientes</h3>
+        <div class="grid" *ngIf="guardianPending().length; else noPending">
+          <article class="booking" *ngFor="let b of guardianPending()">
+            <div class="row header">
+              <span class="chip status warn">PENDIENTE</span>
+            </div>
+            <div class="row">
+              <div><span class="lbl">Periodo:</span> {{ b.start | date:'shortDate' }} - {{ b.end | date:'shortDate' }}</div>
+            </div>
+            <div class="actions">
+              <button class="primary" (click)="accept(b)">Aceptar</button>
+              <button class="danger" (click)="reject(b)">Rechazar</button>
+            </div>
+          </article>
+        </div>
+        <ng-template #noPending><div class="empty card">No hay solicitudes pendientes.</div></ng-template>
+      </section>
+      <section>
+        <h3 class="section">Activas</h3>
+        <div class="grid" *ngIf="guardianActive().length; else noActiveG">
+          <article class="booking" *ngFor="let b of guardianActive()">
+            <div class="row header">
+              <span class="chip status">{{ statusLabel(b) }}</span>
+              <span class="chip pay" [class.ok]="b.depositPaid">{{ b.depositPaid ? 'PAGADO' : 'SIN PAGAR' }}</span>
+            </div>
+            <div class="row">
+              <div><span class="lbl">Periodo:</span> {{ b.start | date:'shortDate' }} - {{ b.end | date:'shortDate' }}</div>
+            </div>
+            <div class="actions">
+              <button class="primary" (click)="finalize(b)">Finalizar</button>
+              <button class="danger" (click)="cancel(b)">Cancelar</button>
+              <a class="btnlink" [routerLink]="['/owners','profile', b.ownerId]">Ver perfil del dueño</a>
+            </div>
+          </article>
+        </div>
+        <ng-template #noActiveG><div class="empty card">No hay reservas activas.</div></ng-template>
+      </section>
+      <div style="margin-top:24px">
+        <ph-bookings-history-panel
+            [roleView]="'GUARDIAN'">
+        </ph-bookings-history-panel>
+      </div>
+    </div>
+  </ng-container>

@@ -48,6 +48,8 @@ export class BookingsHistoryService {
             petName: it.petName,
             ownerName,
             guardianName,
+            ownerId: it.booking.ownerId,
+            guardianId: it.booking.guardianId,
             total: it.totalPrice ?? 0,
             status: it.booking.status as any,
             createdAt: it.booking.createdAt
