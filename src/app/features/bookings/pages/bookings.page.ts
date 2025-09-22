@@ -26,11 +26,14 @@ export class BookingsPage {
   guardianActive = signal<Booking[]>([]);
   guardianCompleted = signal<Booking[]>([]);
 
+  private syncBookingsEffect = effect(() => {
+    void this.service.bookings();
+    this.refresh();
+  });
+
   ngOnInit(){
     this.service.reload();
     this.refresh();
-    // Keep in sync with changes to the bookings store
-    effect(() => { void this.service.bookings(); this.refresh(); });
   }
 
   private refresh(){
