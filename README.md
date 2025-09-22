@@ -1,109 +1,178 @@
-﻿# PetHero - Angular Starter (Standalone + Lazy + Mock API)
+# PetHero — Guía de funcionalidades (no técnica)
 
-Aplicacion demo para duenos y guardianes. Incluye Home con dashboard por rol, busqueda de guardianes, reservas con validaciones, pagos simulados, resenas, chat, notificaciones y perfiles, todo sobre una API mock (json-server).
+**PetHero** es una app pensada para conectar **Dueños de mascotas (Owners)** con **Cuidadores (Guardians)**. 
+El objetivo es simple: encontrar a la persona ideal para cuidar a tu mascota, coordinar fechas, hablar por chat, reservar y dejar una reseña al finalizar.
 
-## Requisitos
-- Node 18+
-- npm 9+
+---
 
-## Puesta en marcha
-    npm install
-    # Ejecutar API mock y app en paralelo
-    npm run start:mock
-    # o por separado
-    npm run mock      # API: http://localhost:3000
-    npm start         # App: http://localhost:4200
+## 👤 Roles y qué puede hacer cada uno
 
-## Tecnologias y arquitectura
-- Angular 18, Standalone Components y rutas lazy
-- Estado reactivo con Angular Signals
-- JSON Server como backend mock (mock/db.json)
-- Persistencia local para features (localStorage / sessionStorage)
-- Interceptores: token mock y manejo de errores
+### Owner (dueño de mascota)
+- Crear su **perfil** personal.
+- Cargar una o varias **mascotas** (nombre, tipo, tamaño, notas, foto).
+- **Buscar** y **filtrar** cuidadores por ciudad y características.
+- Marcar **favoritos** para volver rápido a perfiles que le interesen.
+- **Chatear** con cuidadores para despejar dudas.
+- **Solicitar reservas** para fechas específicas.
+- Recibir **comprobantes de pago** (voucher) y registrar pagos (señal o total).
+- Dejar **reseñas** y puntajes cuando el servicio termina.
+- Ver un **panel (Home)** con próximos eventos y pendientes.
 
-## Navegacion y rutas
-- Default: '' -> /home (protegida). Usuarios no autenticados son redirigidos a /auth/login.
-- Auth: /auth/* (login, registro owner/guardian)
-- Home: /home (dashboard por rol)
-- Guardians: /guardians/* (protegido)
-- Owners: /owners/* (protegido)
-- Bookings, Reviews, Payments: modulos protegidos
-- Mi cuenta: /me/profile
+### Guardian (cuidador)
+- Completar su **perfil público** (presentación, foto, ciudad).
+- Definir **precio por noche** y qué **tipos/tamaños** acepta.
+- Administrar su **disponibilidad por días** con un calendario simple.
+- Ver **días con reservas confirmadas** claramente resaltados.
+- **Chatear** con dueños para coordinar detalles.
+- **Aceptar/Rechazar** solicitudes de reserva.
+- Emitir/actualizar **comprobantes de pago (voucher)**.
+- Recibir **reseñas** y construir su **reputación**.
+- Ver un **panel (Home)** con métricas rápidas del día a día.
 
-## Home (dashboard)
-Pantalla principal para usuarios autenticados.
-- Saludo rotativo y avatar con fallback (pravatar si el perfil no tiene imagen)
-- Actividad: notificaciones recientes y contador de mensajes no leidos
-- Dueno:
-  - Mis Mascotas: total (compatibilidad con modelos antiguos), accesos rapidos
-  - Reservas: activas, pendientes de pago y proxima reserva
-  - Minisparkbars con importes de las ultimas reservas
-- Guardian:
-  - KPIs: pendientes, activas, finalizadas e ingresos estimados
-  - Reputacion: promedio y cantidad de resenas
-  - Proxima disponibilidad (si hay slots)
-  - Minisparkbars de ultimas reservas atendidas
-- UI moderna: gradientes, glass cards, responsive y dark-aware
+---
 
-## Autenticacion y perfiles
-- Login/Registro contra json-server (/users)
-- Sesion mock persistida en sessionStorage
-- authGuard protege rutas; usuarios sin sesion son enviados a /auth/login
-- CurrentProfileService carga el perfil (/profiles?userId=)
+## 🧭 Recorrido rápido (5 minutos)
 
-## Duenos - Mascotas
-- Listado/creacion/eliminacion via PetsService (/pets)
-- Compatibilidad legacy: conteo y listados consideran ownerId en diferentes formatos (por ejemplo "1" o "u1") e incluso ownerEmail si existe en el mock
+1. **Registrate** como Owner o Guardian.
+2. Completá tu **perfil**.
+3. (Owner) Cargá tu **mascota** y buscá **guardianes** en tu ciudad.
+4. Abrí un **chat** con un guardián que te guste.
+5. **Solicitá la reserva** para las fechas deseadas.
+6. (Guardian) **Aceptá** la solicitud y revisá el **voucher** de pago.
+7. Una vez finalizado el servicio, el Owner deja una **reseña** ⭐ y el proceso queda **completado**.
 
-## Guardianes
-- Busqueda con filtros basicos y perfil detallado
-- Datos de prueba realistas en mock/db.json (ver abajo)
+> Bonus: Si sos Guardian, mantené tu **calendario** al día; eso hace que te encuentren más rápido y evita choques de fechas.
 
-## Reservas (Bookings)
-- Estados: REQUESTED, ACCEPTED, REJECTED, CANCELLED, CONFIRMED, IN_PROGRESS, COMPLETED
-- Validaciones: fechas validas, no superposicion para dueno ni para guardian
-- Precio: noches * pricePerNight del guardian
-- Acciones: solicitar, aceptar/rechazar, pagar (simulado), cancelar, finalizar
-- Persistencia en localStorage (demo)
-- Notificaciones automaticas para acciones principales
+---
 
-## Pagos (simulado)
-- Checkout de deposito (50%) para confirmar reserva
+## 🔎 Búsqueda y perfiles de Guardianes
 
-## Resenas
-- Servicio y pagina de resenas (/reviews); usadas para el promedio en Home (guardian)
+- Galería de **perfiles** con foto, nombre, **ciudad**, **precio** y rating promedio.
+- Detalle del perfil con **descripción**, **fotos**, tamaños y tipos de mascota aceptados.
+- Botón de **“Favorito”** para guardar y volver después.
+- Botón **“Mandar mensaje”** para abrir el **chat** desde el perfil.
 
-## Chat
-- Conversaciones derivadas de reservas y mensajes previos
-- Refresco periodico desde la API (/messages)
-- Ventanas flotantes, no leidos, recibido/leido
-- Persistencia local para mejorar UX en la demo
+---
 
-## Notificaciones
-- Servicio en memoria con persistencia local (shared/services/notifications.service.ts)
-- Menu en header con punto de no leidos y listado en Home
+## 💬 Chat simple y siempre a mano
 
-## Servicios y helpers clave
-- ApiService (HTTP base)
-- auth-token.interceptor.ts, error-handler.interceptor.ts
-- current-profile.service.ts, profile.service.ts
-- bookings.service.ts, pets.service.ts, guardians.service.ts, reviews.service.ts, availability.service.ts
+- **Barra de chat** en la parte inferior para seguir conversaciones mientras navegás.
+- **Lista de contactos** a la derecha para saltar entre conversaciones.
+- Ideal para coordinar **detalles rápidos** (horarios, presentación de la mascota, dudas).
 
-## Componentes UI
-- AvatarComponent, rating.component, chat-bar, contacts-panel
+---
 
-## Datos mock (json-server)
-- Endpoints: /users, /profiles, /guardians, /pets, /bookings, /messages, /reviews, /payments, /availability
-- Cuentas de prueba:
-  - 15 guardianes adicionales auto-generados (*.mail.com) con perfiles, precios, ciudades y ratings variados
+## 📆 Disponibilidad del guardián (por días)
 
-## Scripts npm
-- npm run mock    -> inicia json-server (http://localhost:3000)
-- npm start       -> inicia la app (http://localhost:4200)
-- npm run start:mock -> corre API mock y app en paralelo
-- npm run build   -> compila prod
-- npm run lint / npm test
+- Vista de **calendario** para agregar o quitar **días disponibles**.
+- **Sin solapamientos**: la app te avisa si intentás superponer periodos.
+- **Días con reserva confirmada** aparecen **resaltados** para que no se te pasen.
+- Búsquedas y chequeos **por día**, pensadas para evitar confusiones con rangos complejos.
 
-## Notas
-- Proyecto de demostracion: la seguridad es mock y no debe usarse en produccion.
-- El Home asume datos de mock/localStorage; si se borra el storage, la UI se resetea.
+> Consejo: cargá primero los días “fijos” (ej.: todos los lunes y jueves del mes) y luego ajustá casos puntuales.
+
+---
+
+## 🧾 Reservas: del pedido a la reseña
+
+1. **Solicitud** (Owner) → elige fechas y envía el pedido.
+2. **Respuesta** (Guardian) → puede **Aceptar** o **Rechazar**.
+3. **Seña/Confirmación**: se genera un **voucher** y se registra el pago.
+4. **En curso**: servicio activo durante las fechas.
+5. **Completado**: el Owner deja una **reseña** y un **puntaje** ⭐⭐️⭐️⭐️⭐️.
+
+> Estados especiales: **Cancelada** (por cualquiera de las partes) o **Rechazada** (por el guardián).
+
+---
+
+## 💳 Comprobantes y pagos
+
+- Cada reserva puede tener un **voucher** asociado (importe y vencimiento).
+- El estado del voucher cambia (emitido, pagado, vencido, anulado) para que todos estén alineados.
+- Registro simple de **pagos** (seña o total) para cerrar el circuito.
+
+---
+
+## 🐾 Mascotas (Owners)
+
+- Cargá todas tus **mascotas** con sus datos básicos.
+- Subí **foto**, indicá **tamaño** y agregá **notas** (medicación, carácter, etc.).
+- Elegí qué mascota va en cada **reserva**.
+
+---
+
+## ⭐ Reseñas y reputación
+
+- Al finalizar el servicio, el Owner puede dejar una **reseña** con **puntaje**.
+- El perfil del Guardián muestra **promedio** y **cantidad** de reseñas.
+- Las buenas reseñas ayudan a que te **elijan más**.
+
+---
+
+## 🏠 Home (panel por rol)
+
+- **Próximos eventos** (reservas, pagos, disponibilidad).
+- **Atajos** a lo que suele usarse seguido (mensajes, mascotas, calendario).
+- **Indicadores** rápidos (por ejemplo: cuántos mensajes sin leer o próximas reservas).
+
+---
+
+## ❤️ Favoritos (Owners)
+
+- Guardá perfiles que te interesan para volver **rápido**.
+- Útil si estás **comparando** opciones o querés decidir más tarde.
+
+---
+
+## 🔐 Roles y comportamiento esperado
+
+- Algunas pantallas muestran **cosas distintas** según seas Owner o Guardian.
+- El sistema solo habilita **acciones válidas** para tu rol (por ejemplo: solo Guardian puede **aceptar** reservas).
+- La navegación te lleva por el **flujo correcto** (no necesitás conocer reglas internas).
+
+---
+
+## 🧪 Datos de prueba
+
+- La app incluye **datos de ejemplo** para que puedas **probar** sin cargar todo desde cero (perfiles, guardianes, etc.).
+- Podés **registrarte** con un usuario nuevo si preferís un recorrido limpio.
+
+> Sugerencia: probá con **dos usuarios** (uno Owner y otro Guardian) para vivir ambas experiencias y chatear “contigo mismo”.
+
+---
+
+## 🧰 Consejos de uso
+
+- Si sos **Owner**: hacé una lista corta de 2–3 favoritos y usá el **chat** para decidir.
+- Si sos **Guardian**: mantené tu **calendario** al día y pedí a tus clientes que te dejen **reseña**.
+- En ambos casos: cargá **fotos** claras (perfiles y mascotas) — ayudan un montón a decidir.
+
+---
+
+## 🗺️ Próximas ideas (roadmap sugerido)
+
+- **Búsquedas avanzadas** (por barrio, disponibilidad directa desde la búsqueda).
+- **Promociones** (descuento por reservas largas o clientes recurrentes).
+- **Verificación de identidad** y **seguro** opcional.
+- **Recordatorios** automáticos de check-in / check-out.
+- **Métricas** para guardianes (ocupación, ingresos, reseñas por periodo).
+
+---
+
+## ❓Preguntas frecuentes
+
+**¿Necesito hablar antes de reservar?**  
+No es obligatorio, pero el **chat** ayuda a alinear expectativas y evita sorpresas.
+
+**¿Cuándo puedo dejar una reseña?**  
+Cuando la reserva está **Completada**. Si se cancela, no se habilita reseña.
+
+**¿Puedo cambiar fechas de una reserva?**  
+Sí, pero lo ideal es **coordinar por chat** y volver a emitir el **voucher** si cambia el importe.
+
+**¿Cómo sé si un día está ocupado?**  
+En el calendario del Guardian, los **días con reserva confirmada** aparecen resaltados.
+
+---
+
+> Esta guía está orientada a **uso y evaluación funcional**. Si necesitás detalles técnicos (frameworks, rutas, despliegue), hay un README técnico separado.
