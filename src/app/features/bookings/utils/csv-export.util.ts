@@ -1,11 +1,18 @@
 // src/app/features/bookings-history/csv-export.util.ts
+/*
+############################################
+Name: exportBookingsCsv
+Objetive: Export bookings csv.
+Extra info: Streams data through mapping and filtering transforms before returning.
+############################################
+*/
 export function exportBookingsCsv(rows: any[], filename = 'bookings.csv') {
   if (!rows?.length) return;
 
   const headers = Object.keys(rows[0]);
   const esc = (v: unknown) => {
     const s = v == null ? '' : String(v);
-    // escapado CSV básico
+    // escapado CSV basico
     if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
     return s;
   };

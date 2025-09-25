@@ -1,5 +1,13 @@
 import { Injectable, signal } from '@angular/core';
 import { NotificationItem } from '@shared/models';
+/*
+############################################
+Name: NotificationsService
+Objetive: Provide notifications domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class NotificationsService {

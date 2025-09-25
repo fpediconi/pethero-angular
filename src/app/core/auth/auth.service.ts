@@ -4,6 +4,14 @@ import { environment } from '../../../environments/environment';
 import { User } from '@shared/models';
 import { map, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
+/*
+############################################
+Name: AuthService
+Objetive: Provide auth domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -14,7 +22,7 @@ export class AuthService {
   private api = environment.apiBaseUrl;
 
   constructor(){
-    // Restaurar sesión si existe en sessionStorage
+    // Restaurar sesion si existe en sessionStorage
     try {
       const token = sessionStorage.getItem('pethero_token');
       const rawUser = sessionStorage.getItem('pethero_user');
@@ -30,14 +38,14 @@ export class AuthService {
     return this.http.get<User[]>(`${this.api}/users`, { params }).pipe(
       map(users => {
         const user = users[0];
-        if (!user) throw new Error('Credenciales inválidas');
+        if (!user) throw new Error('Credenciales invalidas');
         return user;
       }),
       tap(user => this.persistSession(user))
     );
   }
 
-  // Registro: crea el usuario en /users. La creación de Profile se maneja fuera (ProfileService)
+  // Registro: crea el usuario en /users. La creacion de Profile se maneja fuera (ProfileService)
   register(payload: { email: string; password: string; role: User['role'] }): Observable<User> {
     const body: User = {
       email: payload.email,
@@ -50,7 +58,7 @@ export class AuthService {
     );
   }
 
-  // Expone una forma segura de persistir la sesión desde componentes que completen datos
+  // Expone una forma segura de persistir la sesion desde componentes que completen datos
   persistSession(user: User) {
     try {
       sessionStorage.setItem('pethero_token', `mock-${user.id}`);

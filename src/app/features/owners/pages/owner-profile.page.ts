@@ -4,6 +4,14 @@ import { ActivatedRoute } from '@angular/router';
 import { Profile } from '@shared/models';
 import { ProfileService } from '@core/profile';
 import { ChatService } from '@app/chat/chat.service';
+/*
+############################################
+Name: OwnerProfilePage
+Objetive: Drive the owner profile page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-owner-profile',
@@ -12,10 +20,10 @@ import { ChatService } from '@app/chat/chat.service';
   template: `
     <ng-container *ngIf="profile() as p; else loading">
       <section class="hero">
-        <img class="avatar" [src]="p.avatarUrl || 'https://via.placeholder.com/160'" alt="Avatar del dueño">
+        <img class="avatar" [src]="p.avatarUrl || 'https://via.placeholder.com/160'" alt="Avatar del dueno">
         <div class="meta">
-          <h1 class="name">{{ p.displayName || ('Dueño ' + p.userId) }}</h1>
-          <p class="city">{{ p.location || 'Ubicación no informada' }}</p>
+          <h1 class="name">{{ p.displayName || ('Dueno ' + p.userId) }}</h1>
+          <p class="city">{{ p.location || 'Ubicacion no informada' }}</p>
           <div class="actions">
             <button class="btn" type="button" (click)="message(String(p.userId))">Mandar mensaje</button>
           </div>
@@ -24,20 +32,20 @@ import { ChatService } from '@app/chat/chat.service';
 
       <section class="content">
         <article class="card bio">
-          <h3>Sobre mí</h3>
-          <p>{{ p.bio || 'Este usuario aún no escribió su bio.' }}</p>
+          <h3>Sobre mi</h3>
+          <p>{{ p.bio || 'Este usuario aun no escribio su bio.' }}</p>
         </article>
         <article class="card details">
           <h3>Contacto</h3>
           <div class="rows">
-            <div class="row"><span class="lbl">Teléfono</span> <span>{{ p.phone || '-' }}</span></div>
-            <div class="row"><span class="lbl">Ubicación</span> <span>{{ p.location || '-' }}</span></div>
+            <div class="row"><span class="lbl">Telefono</span> <span>{{ p.phone || '-' }}</span></div>
+            <div class="row"><span class="lbl">Ubicacion</span> <span>{{ p.location || '-' }}</span></div>
           </div>
         </article>
       </section>
     </ng-container>
     <ng-template #loading>
-      <div class="card">Cargando perfil…</div>
+      <div class="card">Cargando perfil...</div>
     </ng-template>
   `,
   styles: [`

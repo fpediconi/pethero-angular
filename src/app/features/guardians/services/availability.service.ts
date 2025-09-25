@@ -17,6 +17,14 @@ type ApiAvailabilitySlot = {
   updatedAt?: string;
   acceptedSizes?: any[];
 };
+/*
+############################################
+Name: AvailabilityService
+Objetive: Provide availability domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class AvailabilityService {
@@ -27,15 +35,27 @@ export class AvailabilityService {
   slotsSig = this._slots;
 
   private mapFromApi(s: ApiAvailabilitySlot): AvailabilitySlot {
+    const startRaw = (s as any).startDate ?? (s as any).start ?? '';
+    const endRaw   = (s as any).endDate   ?? (s as any).end   ?? '';
+
+    
+    const startDay = String(startRaw).slice(0, 10);
+    const endDay   = String(endRaw).slice(0, 10);
+
     return {
       id: String(s.id),
       guardianId: String(s.guardianId),
-      startDate: s.start,
-      endDate: s.end,
-      createdAt: s.createdAt || new Date().toISOString(),
-      updatedAt: s.updatedAt,
+      startDate: startDay,       // [start, end)
+      endDate: endDay,
+      createdAt: (s as any).createdAt ?? new Date().toISOString(),
+      updatedAt: (s as any).updatedAt,
+      // Campos legacy
+      start: (s as any).start,
+      end: (s as any).end,
+      acceptedSizes: (s as any).acceptedSizes,
     };
   }
+
 
   private mapToApi(s: AvailabilitySlot): ApiAvailabilitySlot {
     return {
@@ -68,6 +88,14 @@ export class AvailabilityService {
     );
   }
 
+  
+  /*
+  ############################################
+  Name: create
+  Objetive: Build composite structures.
+  Extra info: Streams data through mapping and filtering transforms before returning.
+  ############################################
+  */
   create(slotInput: Omit<AvailabilitySlot, 'id' | 'createdAt' | 'updatedAt'>): Observable<AvailabilitySlot> {
     const base: AvailabilitySlot = {
       ...slotInput,
@@ -103,6 +131,14 @@ export class AvailabilityService {
     );
   }
 
+  
+  /*
+  ############################################
+  Name: update
+  Objetive: Update mutable state.
+  Extra info: Streams data through mapping and filtering transforms before returning.
+  ############################################
+  */
   update(id: string, patch: Partial<AvailabilitySlot>): Observable<AvailabilitySlot> {
     const curr = this._slots() || [];
     const idx = curr.findIndex(s => s.id === id);
@@ -148,6 +184,14 @@ export class AvailabilityService {
     );
   }
 
+  
+  /*
+  ############################################
+  Name: replaceForGuardian
+  Objetive: Manage the replace for guardian workflow.
+  Extra info: Streams data through mapping and filtering transforms before returning.
+  ############################################
+  */
   replaceForGuardian(guardianId: string, slots: Omit<AvailabilitySlot, 'id' | 'createdAt' | 'updatedAt'>[]): Observable<void> {
     // Replace all slots for guardian with provided list
     return this.listByGuardian(guardianId).pipe(
@@ -224,7 +268,7 @@ export class AvailabilityService {
         guardianId: String(x.guardianId),
         start: x.start || x.startDate,
         end: x.end || x.endDate,
-        // Regla actual: 1 reserva por día. Ignoramos valores mayores en mock.
+        // Regla actual: 1 reserva por dia. Ignoramos valores mayores en mock.
         capacity: 1,
         recurrence: x.recurrence,
         meta: x.meta,

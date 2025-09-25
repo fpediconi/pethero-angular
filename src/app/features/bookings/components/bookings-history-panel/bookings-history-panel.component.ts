@@ -16,6 +16,14 @@ import { BookingSummary, HistoryQuery, HistoryStatus } from "@features/bookings/
 import { exportBookingsCsv } from "@features/bookings/utils";
 import { debounceTime } from "rxjs/operators";
 import { RouterLink } from '@angular/router';
+/*
+############################################
+Name: BookingsHistoryPanelComponent
+Objetive: Render and orchestrate the bookings history panel component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-bookings-history-panel",
@@ -28,7 +36,7 @@ export class BookingsHistoryPanelComponent {
   private fb = inject(FormBuilder);
   private api = inject(BookingsHistoryService);
 
-  // QUIÉN VE (define columnas)
+  // QUIEN VE (define columnas)
   roleView = input.required<"GUARDIAN" | "OWNER">();
 
   // Eventos para enganchar acciones del host 
@@ -63,6 +71,14 @@ export class BookingsHistoryPanelComponent {
     Math.max(1, Math.ceil(this.total() / this.pageSize())),
   );
 
+  
+  /*
+  ############################################
+  Name: constructor
+  Objetive: Manage the constructor workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   constructor() {
     // Rebuscar ante cambios de filtros
     this.form.valueChanges.pipe(debounceTime(250)).subscribe(() => {
@@ -70,7 +86,7 @@ export class BookingsHistoryPanelComponent {
       this.loadIfReady();
     });
 
-    // Rebuscar ante cambios de página/tamaño
+    // Rebuscar ante cambios de pagina/tamano
     effect(() => {
       void this._page();
       void this._pageSize();
@@ -82,14 +98,14 @@ export class BookingsHistoryPanelComponent {
         void this.roleView();
         this._page.set(0);
         this.loadIfReady();
-      } catch { /* todavía no hay input; ignorar */ }
+      } catch { /* todavia no hay input; ignorar */ }
     });
   }
 
   private loadIfReady() {
     let role: 'OWNER'|'GUARDIAN';
     try {
-      role = this.roleView();   // solo sigue si ya está el input
+      role = this.roleView();   // solo sigue si ya esta el input
     } catch { return; }
     this.load();
   }

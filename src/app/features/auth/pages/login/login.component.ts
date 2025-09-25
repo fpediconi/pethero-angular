@@ -4,6 +4,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router, RouterModule, ActivatedRoute } from "@angular/router";
 import { AuthService } from "@core/auth";
 import { UserRole } from "@shared/models";
+/*
+############################################
+Name: LoginComponent
+Objetive: Render and orchestrate the login component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   standalone: true,
@@ -29,6 +37,14 @@ export class LoginComponent {
   touched = (c: "email" | "password") =>
     this.form.controls[c].touched || this.form.controls[c].dirty;
 
+  
+  /*
+  ############################################
+  Name: onSubmit
+  Objetive: Manage the on submit workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   onSubmit() {
     if (this.form.invalid || this.loading()) return;
     this.error.set(null);
@@ -49,7 +65,7 @@ export class LoginComponent {
       },
       error: (e) => {
         console.error(e);
-        this.error.set("Email o contraseña incorrectos");
+        this.error.set("Email o contrasena incorrectos");
         this.loading.set(false);
       },
     });

@@ -9,6 +9,14 @@ import { startWith } from "rxjs/operators";
 import { CurrentProfileService } from "@core/profile";
 import { GuardiansService } from "@features/guardians/services";
 import { PetType } from "@features/pets/models";
+/*
+############################################
+Name: ProfileFormComponent
+Objetive: Render and orchestrate the profile form component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   standalone: true,
@@ -77,6 +85,14 @@ export class ProfileFormComponent implements OnInit {
     return (a + b).toUpperCase();
   });
 
+  
+  /*
+  ############################################
+  Name: ngOnInit
+  Objetive: Bootstrap the component once the view is initialized.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   ngOnInit(): void {
     const user = this.auth.user();
     if (!user?.id) return;
@@ -123,6 +139,14 @@ export class ProfileFormComponent implements OnInit {
     this.pricePerNight.set(Number.isFinite(v) ? v : null);
   }
 
+  
+  /*
+  ############################################
+  Name: save
+  Objetive: Manage the save workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   save() {
     this.submitted.set(true);
     if (this.form.invalid) return;
@@ -149,7 +173,7 @@ export class ProfileFormComponent implements OnInit {
             typeof typedPrice === "number" && !Number.isNaN(typedPrice)
               ? typedPrice
               : 0;
-          // Sincroniza también los campos visibles en la búsqueda/perfil de guardianes
+          // Sincroniza tambien los campos visibles en la busqueda/perfil de guardianes
           // para evitar desajustes entre /profiles y /guardians
           const gp = {
             id: guardianId,
@@ -170,7 +194,7 @@ export class ProfileFormComponent implements OnInit {
             error: (e) => {
               console.error(e);
               this.loading.set(false);
-              this.message.set("No se pudo guardar datos de guardián");
+              this.message.set("No se pudo guardar datos de guardian");
             },
           });
           return;

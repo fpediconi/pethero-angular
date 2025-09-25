@@ -5,6 +5,14 @@ import { Observable, from, map } from 'rxjs';
 import { BookingSummary, HistoryQuery, Paged } from '@features/bookings/models';
 import { BookingsService, BookingHistoryQuery } from '@features/bookings/services/bookings.service';
 import { AuthService } from '@core/auth';
+/*
+############################################
+Name: BookingsHistoryService
+Objetive: Provide bookings history domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class BookingsHistoryService {
@@ -28,14 +36,22 @@ export class BookingsHistoryService {
     };
   }
 
+  
+  /*
+  ############################################
+  Name: search
+  Objetive: Execute the search workflow.
+  Extra info: Streams data through mapping and filtering transforms before returning.
+  ############################################
+  */
   search(qry: HistoryQuery): Observable<Paged<BookingSummary>> {
     const hq = this.toHistoryQuery(qry);
 
     return from(this.bookings.searchHistory(hq)).pipe(
       map(res => ({
         items: res.items.map(it => {
-          // El panel muestra UNA de estas dos columnas según el rol.
-          // Cargamos sólo la relevante y dejamos la otra vacía para evitar pedir más datos.
+          // El panel muestra UNA de estas dos columnas segun el rol.
+          // Cargamos solo la relevante y dejamos la otra vacia para evitar pedir mas datos.
           const ownerName    = hq.role === 'GUARDIAN' ? it.counterpartName : '';
           const guardianName = hq.role === 'OWNER'    ? it.counterpartName : '';
 

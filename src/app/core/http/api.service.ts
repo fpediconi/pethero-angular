@@ -1,6 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
+/*
+############################################
+Name: ApiService
+Objetive: Provide api domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

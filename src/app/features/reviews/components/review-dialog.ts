@@ -1,1 +1,1 @@
-/* Placeholder de diálogo de reseña */
+/* Placeholder de dialogo de resena */

@@ -2,6 +2,14 @@ import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
 import { AvailabilityService } from "@features/guardians/services";
+/*
+############################################
+Name: AvailabilityPeriodFormComponent
+Objetive: Render and orchestrate the availability period form component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-availability-period-form",
@@ -25,6 +33,14 @@ export class AvailabilityPeriodFormComponent {
     end: ["", Validators.required],
   });
 
+  
+  /*
+  ############################################
+  Name: onSubmit
+  Objetive: Manage the on submit workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   async onSubmit() {
     this.error = null;
     const v = this.form.getRawValue();
@@ -49,7 +65,7 @@ export class AvailabilityPeriodFormComponent {
     );
     if (!check.ok) {
       const c = check.conflicts![0];
-      this.error = `Se solapa con otro período (${(c.start || "").slice(0, 10)} → ${(c.end || "").slice(0, 10)})`;
+      this.error = `Se solapa con otro periodo (${(c.start || "").slice(0, 10)}  ${(c.end || "").slice(0, 10)})`;
       return;
     }
     this.availability

@@ -4,6 +4,14 @@ import { Favorite } from '@features/owners/models';
 import { AuthService } from '@core/auth';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
+/*
+############################################
+Name: FavoritesService
+Objetive: Provide favorites domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class FavoritesService {
@@ -17,9 +25,9 @@ export class FavoritesService {
 
   private ownerKey(): string {
     const u = this.auth.user();
-    if (!u) throw new Error('Debe iniciar sesión');
-    if (u.role !== 'owner') throw new Error('Función disponible para dueños (Owners)');
-    if (u.id == null) throw new Error('Usuario inválido');
+    if (!u) throw new Error('Debe iniciar sesion');
+    if (u.role !== 'owner') throw new Error('Funcion disponible para duenos (Owners)');
+    if (u.id == null) throw new Error('Usuario invalido');
     // En el mock, ownerId se guarda como string tipo "u1"
     return `u${u.id}`;
   }
@@ -60,13 +68,21 @@ export class FavoritesService {
     return this.api.delete<void>(`/favorites/${favoriteId}`);
   }
 
-  // Atajo para vistas: devuelve si un guardian está en favoritos segun la cache actual
+  // Atajo para vistas: devuelve si un guardian esta en favoritos segun la cache actual
   isFavorite(guardianId: string): boolean {
     const list = this._favorites();
     if (!Array.isArray(list)) return false;
     return list.some(f => String(f.guardianId) === String(guardianId));
   }
 
+  
+  /*
+  ############################################
+  Name: toggle
+  Objetive: Toggle internal flags.
+  Extra info: Streams data through mapping and filtering transforms before returning.
+  ############################################
+  */
   toggle(guardianId: string): Observable<{ isFavorite: boolean; favorite?: Favorite }> {
     try {
       const ownerId = this.ownerKey();

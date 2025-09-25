@@ -1,6 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PaymentsService } from './payments.service';
+/*
+############################################
+Name: CheckoutPage
+Objetive: Drive the checkout page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-checkout',
@@ -8,7 +16,7 @@ import { PaymentsService } from './payments.service';
   imports: [CommonModule],
   template: `
   <div class="card">
-    <h2>Checkout — Depósito 50%</h2>
+    <h2>Checkout - Deposito 50%</h2>
     <p>Monto de ejemplo: \${{ amount() }}</p>
     <button (click)="pay()">Pagar</button>
     <p *ngIf="status()">{{ status() }}</p>
@@ -21,6 +29,6 @@ export class CheckoutPage {
   status = signal('');
 
   pay(){
-    this.status.set('Pago simulado aprobado ✔️');
+    this.status.set('Pago simulado aprobado ');
   }
 }

@@ -5,6 +5,14 @@ import { PetsService } from '@features/pets/services';
 import { Pet, PetSize, PetType } from '@features/pets/models';
 import { AuthService } from '@core/auth';
 import { AvatarComponent } from '@shared/ui';
+/*
+############################################
+Name: PetsPage
+Objetive: Drive the pets page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-pets',
@@ -25,7 +33,7 @@ import { AvatarComponent } from '@shared/ui';
           <label>
             <span>Nombre</span>
             <input formControlName="name" placeholder="Ej: Luna" />
-            <small class="err" *ngIf="fc('name').touched && fc('name').invalid">Ingresá entre 2 y 60 caracteres.</small>
+            <small class="err" *ngIf="fc('name').touched && fc('name').invalid">Ingresa entre 2 y 60 caracteres.</small>
           </label>
 
           <label>
@@ -37,9 +45,9 @@ import { AvatarComponent } from '@shared/ui';
           </label>
 
           <label>
-            <span>Tamaño</span>
+            <span>Tamano</span>
             <select formControlName="size">
-              <option value="SMALL">Pequeño</option>
+              <option value="SMALL">Pequeno</option>
               <option value="MEDIUM">Mediano</option>
               <option value="LARGE">Grande</option>
             </select>
@@ -60,29 +68,29 @@ import { AvatarComponent } from '@shared/ui';
           <label class="file">
             <span>Foto</span>
             <input type="file" accept="image/png,image/jpeg" (change)="onFileSelected($event)" />
-            <small class="muted">JPG o PNG, máx 2MB.</small>
+            <small class="muted">JPG o PNG, max 2MB.</small>
           </label>
 
           <div class="preview" *ngIf="previewUrl()">
-            <img [src]="previewUrl()!" alt="Previsualización" />
+            <img [src]="previewUrl()!" alt="Previsualizacion" />
           </div>
 
           <label class="notes">
-            <span>Descripción / Bio</span>
+            <span>Descripcion / Bio</span>
             <textarea formControlName="notes" rows="3" placeholder="Contanos sobre tu mascota"></textarea>
-            <small class="muted">Máx 300 caracteres.</small>
+            <small class="muted">Max 300 caracteres.</small>
           </label>
         </div>
 
         <div class="actions">
-          <button type="submit" class="primary" [disabled]="form.invalid || creating">{{ creating ? 'Guardando…' : 'Guardar Mascota' }}</button>
+          <button type="submit" class="primary" [disabled]="form.invalid || creating">{{ creating ? 'Guardando...' : 'Guardar Mascota' }}</button>
         </div>
       </form>
     </section>
 
     <section class="list">
       <div *ngIf="pets().length === 0" class="empty card">
-        Aún no cargaste mascotas. ¡Agregá la primera!
+        Aun no cargaste mascotas. !Agrega la primera!
       </div>
       <article class="pet-card card" *ngFor="let p of pets()">
         <div class="media">
@@ -179,7 +187,7 @@ export class PetsPage {
   }
 
   mapType(t: PetType){ return t === 'DOG' ? 'Perro' : 'Gato'; }
-  mapSize(s: PetSize){ return s === 'SMALL' ? 'Pequeño' : s === 'MEDIUM' ? 'Mediano' : 'Grande'; }
+  mapSize(s: PetSize){ return s === 'SMALL' ? 'Pequeno' : s === 'MEDIUM' ? 'Mediano' : 'Grande'; }
 
   onFileSelected(event: Event){
     const input = event.target as HTMLInputElement;
@@ -187,7 +195,7 @@ export class PetsPage {
     if (!file) return;
     // Validaciones de imagen
     const validTypes = ['image/jpeg', 'image/png'];
-    if (!validTypes.includes(file.type)) { alert('Formato no soportado. Usá JPG o PNG.'); input.value=''; return; }
+    if (!validTypes.includes(file.type)) { alert('Formato no soportado. Usa JPG o PNG.'); input.value=''; return; }
     if (file.size > 2 * 1024 * 1024) { alert('La imagen supera 2MB.'); input.value=''; return; }
     const reader = new FileReader();
     reader.onload = () => {
@@ -216,7 +224,7 @@ export class PetsPage {
   }
 
   remove(p: Pet){
-    if (!confirm(`¿Eliminar a ${p.name}?`)) return;
+    if (!confirm(`?Eliminar a ${p.name}?`)) return;
     this.service.delete(p.id).subscribe(() => {
       this.pets.update(list => list.filter(x => x.id !== p.id));
     });

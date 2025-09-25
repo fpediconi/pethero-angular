@@ -7,6 +7,14 @@ import { map, tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 
 export interface ReviewSummary { avg: number; count: number; breakdown?: Record<number, number>; }
+/*
+############################################
+Name: ReviewsService
+Objetive: Provide reviews domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class ReviewsService {
@@ -24,7 +32,7 @@ export class ReviewsService {
     );
   }
 
-  /** Carga y memoiza reseñas para el guardián. */
+  /** Carga y memoiza resenas para el guardian. */
   reviewsSignal(guardianId: string): WritableSignal<Review[]> {
     if (!this.reviewsCache.has(guardianId)) {
       const sig = signal<Review[]>([]);
@@ -45,20 +53,28 @@ export class ReviewsService {
     );
   }
 
-  /** Crea reseña (previene duplicados por bookingId en el cliente). */
+  /** Crea resena (previene duplicados por bookingId en el cliente). */
+  
+  /*
+  ############################################
+  Name: create
+  Objetive: Build composite structures.
+  Extra info: Maintains reactive state consistency across collaborators.
+  ############################################
+  */
   create(review: Partial<Review>): Observable<Review> {
     const user = this.auth.user();
-    if (!user) throw new Error('Debe iniciar sesión.');
+    if (!user) throw new Error('Debe iniciar sesion.');
 
     if (!review.guardianId || !review.ownerId || !review.bookingId || !review.rating) {
-      throw new Error('Datos incompletos de la reseña.');
+      throw new Error('Datos incompletos de la resena.');
     }
 
     // Verificar duplicado por bookingId (cliente)
     const existing = this.reviewsSignal(review.guardianId)()
       .some((r: Review) => r.bookingId === review.bookingId);
     if (existing) {
-      throw new Error('Ya existe una reseña para esa reserva.');
+      throw new Error('Ya existe una resena para esa reserva.');
     }
 
     const body: Partial<Review> = {
@@ -94,15 +110,15 @@ export class ReviewsService {
     );
   }
 
-  /** Resumen memoizado por guardián. */
+  /** Resumen memoizado por guardian. */
   summary(guardianId: string): WritableSignal<ReviewSummary> {
     if (!this.summaryCache.has(guardianId)) {
       const sig = signal<ReviewSummary>({ avg: 0, count: 0 });
       this.summaryCache.set(guardianId, sig);
-      // Inicializar basado en reseñas si ya existen
+      // Inicializar basado en resenas si ya existen
       const existing = this.reviewsCache.get(guardianId)?.() || [];
       this.computeAndSetSummary(guardianId, existing);
-      // Cargar desde API si aún no se cargó
+      // Cargar desde API si aun no se cargo
       if (!this.reviewsCache.has(guardianId)) this.refresh(guardianId).subscribe();
     }
     return this.summaryCache.get(guardianId)!;
@@ -118,7 +134,7 @@ export class ReviewsService {
     this.summaryCache.get(guardianId)?.set(s);
   }
 
-  /** Verifica si el usuario actual (OWNER) puede reseñar al guardian. */
+  /** Verifica si el usuario actual (OWNER) puede resenar al guardian. */
   canCurrentUserReview(guardianId: string, reviews?: Review[]): { allowed: boolean; pendingBookings: string[] } {
     const user = this.auth.user();
     if (!user || user.role !== 'owner' || user.id == null) return { allowed: false, pendingBookings: [] };

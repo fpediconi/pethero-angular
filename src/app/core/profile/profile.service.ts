@@ -2,6 +2,14 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Profile } from '@shared/models';
 import { environment } from '../../../environments/environment';
+/*
+############################################
+Name: ProfileService
+Objetive: Provide profile domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {

@@ -12,6 +12,14 @@ import { ChatService } from '@app/chat/chat.service';
 import { Booking } from '@features/bookings/models';
 import { ApiService } from '@core/http';
 import { AvatarComponent } from '@shared/ui';
+/*
+############################################
+Name: HomePageComponent
+Objetive: Render and orchestrate the home page component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   standalone: true,
@@ -78,7 +86,7 @@ export class HomePageComponent {
   }
   roleLabel(){
     const r = this.user()?.role;
-    return r === 'guardian' ? 'Guardián' : r === 'owner' ? 'Dueño/a' : '¡';
+    return r === 'guardian' ? 'Guardian' : r === 'owner' ? 'Dueno/a' : '!';
   }
   isOwner(){ return this.user()?.role === 'owner'; }
   isGuardian(){ return this.user()?.role === 'guardian'; }
@@ -130,13 +138,21 @@ export class HomePageComponent {
     return this.normalize(values);
   }
 
+  
+  /*
+  ############################################
+  Name: ngOnInit
+  Objetive: Bootstrap the component once the view is initialized.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   ngOnInit(){
     const u = this.user();
     if (!u?.id) return;
 
     // Rotate greeting per visit
     try {
-      const list = ['Hola', '¡Qué bueno verte!', 'Bienvenido/a de vuelta', '¡Hey!', '¿Listo/a para cuidar?'];
+      const list = ['Hola', '!Que bueno verte!', 'Bienvenido/a de vuelta', '!Hey!', '?Listo/a para cuidar?'];
       const last = sessionStorage.getItem('pethero_greet_last') || '';
       let pick = list[Math.floor(Math.random()*list.length)];
       if (pick === last) pick = list[(list.indexOf(pick)+1) % list.length];

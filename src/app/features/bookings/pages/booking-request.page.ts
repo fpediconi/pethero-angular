@@ -7,6 +7,14 @@ import { Pet } from '@features/pets/models';
 import { GuardianProfile } from '@features/guardians/models';
 import { validRange } from '@shared/utils';
 import { PetsService } from '@features/pets/services';
+/*
+############################################
+Name: BookingRequestPage
+Objetive: Drive the booking request page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-booking-request',
@@ -15,8 +23,8 @@ import { PetsService } from '@features/pets/services';
   template: `
   <div class="card" *ngIf="guardian() as g">
     <h2>Confirmar reserva</h2>
-    <p>Guardián: <b>{{ g.name || ('Guardián ' + g.id) }}</b></p>
-    <p>Periodo: <b>{{ start() }} → {{ end() }}</b></p>
+    <p>Guardian: <b>{{ g.name || ('Guardian ' + g.id) }}</b></p>
+    <p>Periodo: <b>{{ start() }}  {{ end() }}</b></p>
     <p>Mascota: <b>{{ pet()?.name }}</b> ({{ pet()?.type }}, {{ pet()?.size }})</p>
     <p class="error" *ngIf="error()">{{ error() }}</p>
     <div style="display:flex; gap:12px; margin-top:12px">
@@ -56,7 +64,7 @@ export class BookingRequestPage {
       await this.bookings.request({ guardian: g, petId: String(p.id), start: this.start(), end: this.end() });
       this.router.navigateByUrl('/bookings');
     } catch (e: any) {
-      this.error.set(e?.message || 'No se pudo crear la solicitud. Probá nuevamente.');
+      this.error.set(e?.message || 'No se pudo crear la solicitud. Proba nuevamente.');
     } finally {
       this.submitting.set(false);
     }
@@ -64,6 +72,14 @@ export class BookingRequestPage {
 
   cancel(){ this.router.navigateByUrl('/guardians/search'); }
 
+  
+  /*
+  ############################################
+  Name: ngOnInit
+  Objetive: Bootstrap the component once the view is initialized.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   ngOnInit(){
     const qp = this.route.snapshot.queryParamMap;
     const start = qp.get('start') || '';

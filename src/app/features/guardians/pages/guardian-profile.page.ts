@@ -8,6 +8,14 @@ import { ReviewsService } from '@features/reviews/services';
 import { FavoritesService } from '@features/owners/services';
 import { AuthService } from '@core/auth';
 import { ReviewsPage } from '@features/reviews/pages';
+/*
+############################################
+Name: GuardianProfilePage
+Objetive: Drive the guardian profile page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-guardian-profile',
@@ -21,8 +29,8 @@ import { ReviewsPage } from '@features/reviews/pages';
           <h1 class="name">{{ p.name || ('Guardian ' + p.id) }}</h1>
           <p class="city">{{ p.city || 'Ciudad no informada' }}</p>
           <div class="badges">
-            <span class="badge rating" (click)="scrollToReviews()" style="cursor:pointer" aria-label="Promedio de reseñas">
-              ★ {{ summary().avg }}/5 ({{ summary().count }})
+            <span class="badge rating" (click)="scrollToReviews()" style="cursor:pointer" aria-label="Promedio de resenas">
+               {{ summary().avg }}/5 ({{ summary().count }})
             </span>
             <span class="badge price">$ {{ p.pricePerNight }} / noche</span>
           </div>
@@ -39,15 +47,15 @@ import { ReviewsPage } from '@features/reviews/pages';
               {{ isFav(p.id) ? 'Quitar' : 'Favorito' }}
             </button>
             <a class="btn" *ngIf="fromSearch()" [routerLink]="['/guardians','search']"
-               [queryParams]="route.snapshot.queryParams" [queryParamsHandling]="'merge'">Volver a la búsqueda</a>
+               [queryParams]="route.snapshot.queryParams" [queryParamsHandling]="'merge'">Volver a la busqueda</a>
           </div>
         </div>
       </section>
 
       <section class="content">
         <article class="card bio">
-          <h3>Sobre mí</h3>
-          <p>{{ p.bio || 'Este guardian aun no escribió su bio.' }}</p>
+          <h3>Sobre mi</h3>
+          <p>{{ p.bio || 'Este guardian aun no escribio su bio.' }}</p>
         </article>
 
         <article class="card details">
@@ -58,7 +66,7 @@ import { ReviewsPage } from '@features/reviews/pages';
               <span class="chip" *ngFor="let t of (p.acceptedTypes || [])">{{ t }}</span>
             </div>
             <div class="row">
-              <span class="lbl">Tamaños aceptados</span>
+              <span class="lbl">Tamanos aceptados</span>
               <span class="chip" *ngFor="let s of (p.acceptedSizes || [])">{{ s }}</span>
             </div>
           </div>
@@ -125,7 +133,7 @@ export class GuardianProfilePage {
   ngOnInit(){
     const id = this.route.snapshot.paramMap.get('id')!;
     const qp = this.route.snapshot.queryParams || {} as any;
-    // Consideramos "desde búsqueda" cuando hay rango de fechas (start/end)
+    // Consideramos "desde busqueda" cuando hay rango de fechas (start/end)
     this.fromSearch.set(!!(qp['start'] && qp['end']));
     this.service.getProfile(id).subscribe(p => {
       this.profile.set(p);

@@ -6,6 +6,14 @@ import {
   computed,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
+/*
+############################################
+Name: RatingComponent
+Objetive: Render and orchestrate the rating component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-rating",

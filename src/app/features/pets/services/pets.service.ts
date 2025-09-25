@@ -1,6 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiService } from '@core/http';
 import { Pet } from '@features/pets/models';
+/*
+############################################
+Name: PetsService
+Objetive: Provide pets domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class PetsService {

@@ -12,6 +12,14 @@ import { map, catchError } from 'rxjs/operators';
 function threadId(a: string, b: string){
   return [a, b].sort().join('|');
 }
+/*
+############################################
+Name: ChatService
+Objetive: Provide chat domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
@@ -35,6 +43,14 @@ export class ChatService {
   names = this._names;
   typingTick = this._typingTick;
 
+  
+  /*
+  ############################################
+  Name: constructor
+  Objetive: Manage the constructor workflow.
+  Extra info: Breaks complex steps into traceable branches for maintainability.
+  ############################################
+  */
   constructor(){
     // Restore from localStorage
     try {
@@ -143,7 +159,7 @@ export class ChatService {
   // Open/close chat windows
   openChat(withUserId: string){
     const me = this.currentUserId();
-    if (!me) { this._error.set('Debe iniciar sesión para chatear.'); return; }
+    if (!me) { this._error.set('Debe iniciar sesion para chatear.'); return; }
     if (!this._openWith().includes(withUserId)){
       this._openWith.set([withUserId, ...this._openWith()]);
     }
@@ -159,7 +175,7 @@ export class ChatService {
   // Messaging
   send(toUserId: string, body: string){
     const me = this.currentUserId();
-    if (!me) { this._error.set('Sesión no válida.'); return; }
+    if (!me) { this._error.set('Sesion no valida.'); return; }
     const msg: Message = {
       id: Math.random().toString(36).slice(2),
       fromUserId: me,

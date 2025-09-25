@@ -3,7 +3,7 @@ export type HistoryStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'CANCELLED' | 'FI
 
 export interface BookingSummary {
   id: string;
-  code?: string;                 // opcional, si tienen un n�mero de reserva
+  code?: string;                 // opcional, si tienen un nmero de reserva
   startDate: string;             // ISO
   endDate: string;               // ISO
   nights?: number;
@@ -23,8 +23,8 @@ export interface HistoryQuery {
   status?: HistoryStatus | 'ANY';
   from?: string;     // ISO date (inclusive)
   to?: string;       // ISO date (inclusive)
-  q?: string;        // texto libre: mascota, c�digo, nombres, etc.
-  roleView: 'GUARDIAN' | 'OWNER'; // qui�n mira la p�gina
+  q?: string;        // texto libre: mascota, cdigo, nombres, etc.
+  roleView: 'GUARDIAN' | 'OWNER'; // quin mira la pgina
 }
 
 export interface Paged<T> {

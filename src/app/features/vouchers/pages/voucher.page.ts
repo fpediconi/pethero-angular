@@ -6,6 +6,14 @@ import { PaymentVoucher } from '@features/vouchers/models';
 import { Booking } from '@features/bookings/models';
 import { GuardiansService } from '@features/guardians/services';
 import { ProfileService } from '@core/profile';
+/*
+############################################
+Name: VoucherPage
+Objetive: Drive the voucher page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-voucher',
@@ -14,12 +22,12 @@ import { ProfileService } from '@core/profile';
   template: `
   <div class="voucher" *ngIf="voucher() as v; else loading">
     <header>
-      <h2>Cupón de pago (50%)</h2>
+      <h2>Cupon de pago (50%)</h2>
       <button class="print" (click)="print()">Imprimir / Descargar</button>
     </header>
     <section class="grid">
       <div class="card">
-        <h3>Datos del cupón</h3>
+        <h3>Datos del cupon</h3>
         <p><strong>ID:</strong> {{ v.id }}</p>
         <p><strong>Reserva:</strong> {{ v.bookingId }}</p>
         <p><strong>Monto:</strong> &#36;{{ v.amount }}</p>
@@ -33,16 +41,16 @@ import { ProfileService } from '@core/profile';
         <p><strong>Estado:</strong> {{ b.status }}</p>
       </div>
       <div class="card">
-        <h3>Dueño</h3>
+        <h3>Dueno</h3>
         <p>{{ ownerName() || ('Usuario ' + booking()?.ownerId) }}</p>
       </div>
       <div class="card">
-        <h3>Guardián</h3>
-        <p>{{ guardianName() || ('Guardián ' + booking()?.guardianId) }}</p>
+        <h3>Guardian</h3>
+        <p>{{ guardianName() || ('Guardian ' + booking()?.guardianId) }}</p>
       </div>
     </section>
   </div>
-  <ng-template #loading><div class="card">Cargando cupón...</div></ng-template>
+  <ng-template #loading><div class="card">Cargando cupon...</div></ng-template>
   `,
   styles: [`
     .voucher{ display:grid; gap:16px }
@@ -63,6 +71,14 @@ export class VoucherPage {
   ownerName = signal<string>('');
   guardianName = signal<string>('');
 
+  
+  /*
+  ############################################
+  Name: ngOnInit
+  Objetive: Bootstrap the component once the view is initialized.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   ngOnInit(){
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;

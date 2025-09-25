@@ -7,7 +7,7 @@ export const guardianGuard: CanActivateFn = () => {
   const router = inject(Router);
   const u = auth.user();
   if (u && u.role === 'guardian') return true;
-  alert('Función disponible para guardianes');
+  alert('Funcion disponible para guardianes');
   router.navigateByUrl('/home');
   return false;
 };

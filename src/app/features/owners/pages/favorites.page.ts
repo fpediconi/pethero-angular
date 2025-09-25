@@ -7,6 +7,14 @@ import { AuthService } from '@core/auth';
 import { ApiService } from '@core/http';
 import { GuardianProfile } from '@features/guardians/models';
 import { forkJoin } from 'rxjs';
+/*
+############################################
+Name: FavoritesPage
+Objetive: Drive the favorites page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-owner-favorites',
@@ -18,13 +26,13 @@ import { forkJoin } from 'rxjs';
   </section>
 
   <section class="list" *ngIf="!loading(); else loadingTpl">
-    <div *ngIf="guardians().length === 0" class="empty card">Aún no agregaste guardianes a favoritos.</div>
+    <div *ngIf="guardians().length === 0" class="empty card">Aun no agregaste guardianes a favoritos.</div>
 
     <article class="g-card card" *ngFor="let g of guardians()">
       <img class="avatar" [src]="g.avatarUrl || (g.photos && g.photos[0]) || 'https://via.placeholder.com/96'" alt="Avatar">
       <div class="info">
         <div class="header-row">
-          <h3 class="name">{{ g.name || ('Guardián ' + g.id) }}</h3>
+          <h3 class="name">{{ g.name || ('Guardian ' + g.id) }}</h3>
           <div class="right">
             <button class="icon-btn heart filled" type="button"
               aria-label="Quitar de favoritos" [attr.aria-pressed]="true"
@@ -111,12 +119,20 @@ export class FavoritesPage {
     });
   }
 
+  
+  /*
+  ############################################
+  Name: loadGuardians
+  Objetive: Load guardians data.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   loadGuardians(){
     const ids = this.favorites().map(f => f.guardianId);
     if (!ids.length) { this.guardians.set([]); return; }
     // Intento batch con ?id=A&id=B
     this.api.get<GuardianProfile[]>('/guardians', { id: ids }).subscribe(gs => {
-      // Mantener el orden según favoritos
+      // Mantener el orden segun favoritos
       const list = gs || [];
       if ((!list || list.length === 0) && ids.length) {
         const requests = ids.map(id => this.api.get<GuardianProfile>(`/guardians/${encodeURIComponent(id)}`));

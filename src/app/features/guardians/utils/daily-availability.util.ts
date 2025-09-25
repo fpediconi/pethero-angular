@@ -36,6 +36,13 @@ export function splitToDays(startISO: string, endISO: string): string[] {
   return daysBetweenLocal(startDay, endDay);
 }
 
+/*
+############################################
+Name: expandRecurrence
+Objetive: Manage the expand recurrence workflow.
+Extra info: Streams data through mapping and filtering transforms before returning.
+############################################
+*/
 export function expandRecurrence(blocks: AvailabilityBlock[], rangeStartUTC: string, rangeEndUTC: string): AvailabilityBlock[] {
   const out: AvailabilityBlock[] = [];
   const rangeDays = splitToDays(rangeStartUTC, rangeEndUTC);

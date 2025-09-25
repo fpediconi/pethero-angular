@@ -10,6 +10,14 @@ import {
 import { CommonModule } from "@angular/common";
 import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
 import { ChatService } from "@app/chat/chat.service";
+/*
+############################################
+Name: ChatBarComponent
+Objetive: Render and orchestrate the chat bar component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-chat-bar",

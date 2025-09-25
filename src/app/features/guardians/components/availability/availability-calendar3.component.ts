@@ -9,6 +9,14 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AvailabilityService } from "@features/guardians/services";
+/*
+############################################
+Name: AvailabilityCalendar3Component
+Objetive: Render and orchestrate the availability calendar3 component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-availability-calendar3",
@@ -47,6 +55,14 @@ export class AvailabilityCalendar3Component implements OnChanges {
     return { startUTC: s.toISOString(), endUTC: e.toISOString() };
   }
 
+  
+  /*
+  ############################################
+  Name: load
+  Objetive: Load required data.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   private load() {
     if (!this.guardianId) return;
     const { startUTC, endUTC } = this.rangeUTC();
@@ -191,6 +207,10 @@ export class AvailabilityCalendar3Component implements OnChanges {
   }
   selectDay(cell: { key: string }) {
     this.selectedDay.set(cell.key);
+  }
+
+  refreshCurrentRange() {
+    this.load();
   }
 }
 

@@ -1,4 +1,12 @@
-﻿import { Component, Input, computed } from "@angular/core";
+import { Component, Input, computed } from "@angular/core";
+/*
+############################################
+Name: AvatarComponent
+Objetive: Render and orchestrate the avatar component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "app-avatar",

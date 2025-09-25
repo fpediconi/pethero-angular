@@ -12,6 +12,14 @@ import { ProfileService } from "@core/profile";
 import { UserRole } from "@shared/models";
 import { finalize, switchMap } from "rxjs/operators";
 import { of } from "rxjs";
+/*
+############################################
+Name: RegisterComponent
+Objetive: Render and orchestrate the register component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   standalone: true,
@@ -58,7 +66,7 @@ export class RegisterComponent implements OnInit {
     }),
   });
 
-  // getters cómodos
+  // getters comodos
   get email() {
     return this.form.controls.email as AbstractControl;
   }
@@ -93,6 +101,14 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+  
+  /*
+  ############################################
+  Name: onSubmit
+  Objetive: Manage the on submit workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   onSubmit() {
     if (this.form.invalid || this.loading()) {
       this.form.markAllAsTouched();
@@ -129,7 +145,7 @@ export class RegisterComponent implements OnInit {
       )
       .subscribe({
         next: ({ role }) => {
-          // navegación suave según rol
+          // navegacion suave segun rol
           if (role === "guardian") this.router.navigateByUrl("/me/profile");
           else this.router.navigateByUrl("/owners/pets");
         },
@@ -137,8 +153,8 @@ export class RegisterComponent implements OnInit {
           console.error(e);
           const msg =
             typeof e?.message === "string" && e.message.includes("email")
-              ? "Ese email ya está registrado"
-              : "No se pudo crear la cuenta. Probá de nuevo.";
+              ? "Ese email ya esta registrado"
+              : "No se pudo crear la cuenta. Proba de nuevo.";
           this.error.set(msg);
         },
       });

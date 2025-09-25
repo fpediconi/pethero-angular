@@ -8,6 +8,14 @@ import { ContactsPanelComponent } from "@app/chat/contacts-panel/contacts-panel.
 import { CurrentProfileService } from "@core/profile";
 import { NotificationsService } from "@core/notifications";
 import { ChatService } from "@app/chat/chat.service";
+/*
+############################################
+Name: AppComponent
+Objetive: Render and orchestrate the app component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "app-root",

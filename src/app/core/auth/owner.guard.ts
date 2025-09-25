@@ -7,7 +7,7 @@ export const ownerGuard: CanActivateFn = () => {
   const router = inject(Router);
   const u = auth.user();
   if (u && u.role === 'owner') return true;
-  alert('Función disponible para dueños (Owners)');
+  alert('Funcion disponible para duenos (Owners)');
   router.navigateByUrl('/home');
   return false;
 };

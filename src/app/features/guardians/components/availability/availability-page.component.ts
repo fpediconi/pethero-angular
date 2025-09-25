@@ -1,9 +1,17 @@
-import { Component, inject, signal } from "@angular/core";
+import { Component, ViewChild, inject, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AvailabilityService } from "@features/guardians/services";
 import { AuthService } from "@core/auth";
 import { AvailabilityCalendar3Component } from "./availability-calendar3.component";
 import { AvailabilityPeriodFormComponent } from "./availability-period-form.component";
+/*
+############################################
+Name: AvailabilityPageComponent
+Objetive: Render and orchestrate the availability page component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-availability-page",
@@ -20,6 +28,9 @@ export class AvailabilityPageComponent {
   private availability = inject(AvailabilityService);
   private auth = inject(AuthService);
 
+  @ViewChild(AvailabilityCalendar3Component)
+  private calendar?: AvailabilityCalendar3Component;
+
   loading = signal(true);
   guardianId = signal<string | null>(null);
   showForm = signal(false);
@@ -34,7 +45,7 @@ export class AvailabilityPageComponent {
     this.loading.set(false);
   }
   reload() {
-    /* calendar listens to month changes and fetches itself */
+    this.calendar?.refreshCurrentRange();
   }
   openForm() {
     this.showForm.set(true);
@@ -43,9 +54,8 @@ export class AvailabilityPageComponent {
     this.showForm.set(false);
   }
   onSaved() {
-    this.showForm.set(
-      false,
-    ); /* Calendar will refresh on month nav; manual reload: */
+    this.showForm.set(false);
+    this.calendar?.refreshCurrentRange();
   }
 }
 

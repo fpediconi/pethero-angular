@@ -3,6 +3,14 @@ import { ApiService } from '@core/http';
 import { GuardianProfile } from '@features/guardians/models';
 import { map, switchMap } from 'rxjs/operators';
 import { of, forkJoin } from 'rxjs';
+/*
+############################################
+Name: GuardiansService
+Objetive: Provide guardians domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class GuardiansService {

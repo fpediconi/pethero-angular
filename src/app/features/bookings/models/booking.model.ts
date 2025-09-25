@@ -1,8 +1,8 @@
 export type BookingStatus =
   | 'REQUESTED'     // Pendiente
-  | 'ACCEPTED'      // Aceptada (por el guardián)
-  | 'REJECTED'      // Rechazada (por el guardián)
-  | 'CANCELLED'     // Cancelada (por dueño)
+  | 'ACCEPTED'      // Aceptada (por el guardian)
+  | 'REJECTED'      // Rechazada (por el guardian)
+  | 'CANCELLED'     // Cancelada (por dueno)
   | 'CONFIRMED'     // Confirmada (pagada)
   | 'IN_PROGRESS'   // En curso
   | 'COMPLETED';    // Finalizada

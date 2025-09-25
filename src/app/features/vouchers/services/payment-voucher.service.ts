@@ -4,6 +4,14 @@ import { PaymentVoucher } from '@features/vouchers/models';
 import { Booking } from '@features/bookings/models';
 import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
+/*
+############################################
+Name: PaymentVoucherService
+Objetive: Provide payment voucher domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class PaymentVoucherService {
@@ -35,6 +43,14 @@ export class PaymentVoucherService {
   }
 
   // Ensure a voucher exists for an accepted booking. Does not duplicate active ISSUED vouchers.
+  
+  /*
+  ############################################
+  Name: issueForBooking
+  Objetive: Manage the issue for booking workflow.
+  Extra info: Streams data through mapping and filtering transforms before returning.
+  ############################################
+  */
   issueForBooking(booking: Booking): Observable<PaymentVoucher> {
     return this.getByBookingId(booking.id).pipe(
       switchMap(existing => {

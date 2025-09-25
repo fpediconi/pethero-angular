@@ -16,7 +16,7 @@ describe('ReviewsService', () => {
     });
     svc = TestBed.inject(ReviewsService);
     http = TestBed.inject(HttpTestingController);
-    // Simula sesión de owner id=1
+    // Simula sesion de owner id=1
     TestBed.inject(AuthService).persistSession({ id: 1, email: 't@t', role: 'owner' } as any);
   });
 
@@ -32,7 +32,7 @@ describe('ReviewsService', () => {
 
   it('creates a review', () => {
     const base = environment.apiBaseUrl;
-    // Pre-carga cache para validación de duplicados
+    // Pre-carga cache para validacion de duplicados
     svc.reviewsSignal('g1').set([]);
     const payload = { guardianId: 'g1', ownerId: '1', bookingId: 'b1', rating: 5 };
     svc.create(payload).subscribe(r => expect(r.id).toBe('r1'));

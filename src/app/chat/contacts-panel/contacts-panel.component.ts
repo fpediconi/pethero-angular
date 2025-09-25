@@ -3,6 +3,14 @@ import { CommonModule } from "@angular/common";
 import { ChatService } from "@app/chat/chat.service";
 import { AuthService } from "@core/auth";
 import { RouterLink } from "@angular/router";
+/*
+############################################
+Name: ContactsPanelComponent
+Objetive: Render and orchestrate the contacts panel component.
+Extra info: Handles bindings, events, and view state.
+############################################
+*/
+
 
 @Component({
   selector: "ph-chat-contacts-panel",

@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { ApiService } from '@core/http';
 import { Booking, BookingStatus } from '@features/bookings/models';
+import { PaymentVoucher } from '@features/vouchers/models';
 import { Profile } from '@shared/models';
 import { Pet } from '@features/pets/models';
 import { GuardianProfile } from '@features/guardians/models';
@@ -41,6 +42,14 @@ export interface BookingHistoryResult {
   page: number;
   pageSize: number;
 }
+/*
+############################################
+Name: BookingsService
+Objetive: Provide bookings domain operations.
+Extra info: Wraps API access, caching, and shared business rules.
+############################################
+*/
+
 
 @Injectable({ providedIn: 'root' })
 export class BookingsService {
@@ -125,25 +134,33 @@ export class BookingsService {
   }
 
   // Create request
+  
+  /*
+  ############################################
+  Name: request
+  Objetive: Manage the request workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   async request(payload: { guardian: GuardianProfile; petId: string; start: string; end: string }): Promise<Booking> {
     const error = validRange(payload.start, payload.end);
     if (error) throw new Error(error);
     const user = this.auth.user();
-    if (!user) throw new Error('Debe iniciar sesión para reservar.');
+    if (!user) throw new Error('Debe iniciar sesion para reservar.');
 
     if (!this.isGuardianAvailable(payload.guardian.id, payload.start, payload.end)) {
-      throw new Error('El guardián no está disponible en ese período.');
+      throw new Error('El guardian no esta disponible en ese periodo.');
     }
     if (!this.isOwnerFree(String(user.id), payload.start, payload.end)) {
-      throw new Error('Ya tiene una reserva que se superpone en ese período.');
+      throw new Error('Ya tiene una reserva que se superpone en ese periodo.');
     }
 
-    // Validación adicional: colisiones y cobertura por disponibilidad
+    // Validacion adicional: colisiones y cobertura por disponibilidad
     const _collide = await firstValueFrom(this.hasOccupiedCollision(payload.guardian.id, { start: payload.start, end: payload.end }));
-    if (_collide) throw new Error('El guardián tiene reservas que se superponen en ese período.');
+    if (_collide) throw new Error('El guardian tiene reservas que se superponen en ese periodo.');
     const _slots = await firstValueFrom(this.availability.listByGuardian(payload.guardian.id));
     const _covers = (_slots || []).some(s => covers(s.startDate, s.endDate, payload.start, payload.end));
-    if (!_covers) throw new Error('El guardián no tiene disponibilidad para esas fechas.');
+    if (!_covers) throw new Error('El guardian no tiene disponibilidad para esas fechas.');
 
     const nights = daysBetween(payload.start, payload.end) || 1;
     const total = nights * (payload.guardian.pricePerNight || 0);
@@ -165,7 +182,7 @@ export class BookingsService {
         next: (saved) => {
           this._bookings.set([saved, ...this._bookings()]);
           this.persist();
-          this.notifications.notify(payload.guardian.id, `Nueva solicitud de reserva del usuario ${user.id} (${payload.start} – ${payload.end})`);
+          this.notifications.notify(payload.guardian.id, `Nueva solicitud de reserva del usuario ${user.id} (${payload.start} - ${payload.end})`);
           resolve(saved);
         },
         error: (e) => reject(e)
@@ -179,12 +196,29 @@ export class BookingsService {
     this._update(bookingId, { status: 'CANCELLED' });
     // Void voucher if present and not paid
     if (b) this.vouchers.voidByBooking(b.id).subscribe();
-    if (b) this.notifications.notify(b.guardianId, `Reserva cancelada por el dueño (${b.start} – ${b.end}).`);
+    if (b) this.notifications.notify(b.guardianId, `Reserva cancelada por el dueno (${b.start} - ${b.end}).`);
   }
-  pay(bookingId: string){
-    const b = this._bookings().find(x => x.id === bookingId);
-    this._update(bookingId, { depositPaid: true, status: 'CONFIRMED' });
-    if (b) this.notifications.notify(b.guardianId, `Reserva pagada. (${b.start} – ${b.end}).`);
+  async pay(bookingId: string): Promise<PaymentVoucher | null> {
+    const booking = this._bookings().find(x => x.id === bookingId);
+    if (!booking) return null;
+
+    try {
+      let voucher = await firstValueFrom(this.vouchers.getByBookingId(booking.id));
+      if (!voucher || voucher.status === 'EXPIRED' || voucher.status === 'VOID') {
+        voucher = await firstValueFrom(this.vouchers.issueForBooking(booking));
+      }
+      if (!voucher) throw new Error('No se pudo obtener el voucher de pago.');
+      if (voucher.status !== 'PAID') {
+        voucher = await firstValueFrom(this.vouchers.markPaid(voucher.id));
+      }
+
+      this._update(bookingId, { depositPaid: true, status: 'CONFIRMED' });
+      this.notifications.notify(booking.guardianId, `Reserva pagada. (${booking.start} - ${booking.end}).`);
+      return voucher;
+    } catch (error) {
+      console.error('[BookingsService] pay failed', error);
+      throw error;
+    }
   }
 
   // Guardian actions
@@ -194,7 +228,7 @@ export class BookingsService {
     if (!this.isGuardianAvailable(b.guardianId, b.start, b.end)) {
       throw new Error('No puede aceptar dos reservas superpuestas.');
     }
-    // Cobertura por disponibilidad (best-effort con caché local)
+    // Cobertura por disponibilidad (best-effort con cache local)
     try {
       const slots = this.availability.slotsSig() || [];
       const covered = (slots || []).some(s => s.guardianId === b.guardianId && covers(s.startDate, s.endDate, b.start, b.end));
@@ -203,17 +237,17 @@ export class BookingsService {
     this._update(bookingId, { status: 'ACCEPTED' });
     // Issue voucher upon acceptance (best-effort)
     this.vouchers.issueForBooking(b).subscribe();
-    this.notifications.notify(b.ownerId, `Tu solicitud fue aceptada por el guardián (${b.start} – ${b.end}).`);
+    this.notifications.notify(b.ownerId, `Tu solicitud fue aceptada por el guardian (${b.start} - ${b.end}).`);
   }
   reject(bookingId: string){
     const b = this._bookings().find(x => x.id === bookingId);
     this._update(bookingId, { status: 'REJECTED' });
-    if (b) this.notifications.notify(b.ownerId, `Tu solicitud fue rechazada por el guardián.`);
+    if (b) this.notifications.notify(b.ownerId, `Tu solicitud fue rechazada por el guardian.`);
   }
   finalize(bookingId: string){
     const b = this._bookings().find(x => x.id === bookingId);
     this._update(bookingId, { status: 'COMPLETED' });
-    if (b) this.notifications.notify(b.ownerId, `Reserva finalizada (${b.start} – ${b.end}).`);
+    if (b) this.notifications.notify(b.ownerId, `Reserva finalizada (${b.start} - ${b.end}).`);
   }
 
 
@@ -231,6 +265,14 @@ export class BookingsService {
     return { items, total, page, pageSize };
   }
 
+  
+  /*
+  ############################################
+  Name: exportHistoryCsv
+  Objetive: Export history csv.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   async exportHistoryCsv(query: BookingHistoryQuery): Promise<string> {
     const dataset = await this.loadHistoryData(query);
     const header = ['bookingId','roleView','counterpartName','petName','startDate','endDate','nights','totalPrice','status'];
@@ -275,6 +317,14 @@ export class BookingsService {
     return csv;
   }
 
+  
+  /*
+  ############################################
+  Name: loadHistoryData
+  Objetive: Load history data.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   private async loadHistoryData(query: BookingHistoryQuery): Promise<BookingHistoryItem[]> {
     const params: Record<string, string> = { _sort: 'start', _order: 'desc' };
     const userId = String(query.userId);
@@ -339,6 +389,14 @@ export class BookingsService {
     return enriched;
   }
 
+  
+  /*
+  ############################################
+  Name: getPetName
+  Objetive: Retrieve pet name.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   private async getPetName(petId: string): Promise<string> {
     const key = petId || '';
     if (!key) return 'Mascota';
@@ -363,6 +421,14 @@ export class BookingsService {
     return request;
   }
 
+  
+  /*
+  ############################################
+  Name: getProfileName
+  Objetive: Retrieve profile name.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   private async getProfileName(userId: string): Promise<string> {
     const key = userId || '';
     if (!key) return 'Usuario';
@@ -429,4 +495,5 @@ export class BookingsService {
     });
   }
 }
+
 

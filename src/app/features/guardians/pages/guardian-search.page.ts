@@ -14,6 +14,14 @@ import { FavoritesService } from '@features/owners/services';
 import { AvailabilityService } from '@features/guardians/services';
 import { covers } from '@core/utils';
 import { firstValueFrom } from 'rxjs';
+/*
+############################################
+Name: GuardianSearchPage
+Objetive: Drive the guardian search page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-guardian-search',
@@ -32,18 +40,18 @@ import { firstValueFrom } from 'rxjs';
         <input type="date" formControlName="start"/>
       </label>
       <label>
-        <span>Hasta</span>
+        <span>Hasta (exclusivo)</span>
         <input type="date" formControlName="end"/>
       </label>
       <label>
         <span>Mascota</span>
         <select formControlName="petId" [disabled]="!pets().length">
-          <option value="" disabled selected>Elegí tu mascota</option>
+          <option value="" disabled selected>Elige tu mascota</option>
           <option *ngFor="let p of pets()" [value]="p.id">{{ p.name }} ({{ p.type }}, {{ p.size }})</option>
         </select>
       </label>
       <label>
-        <span>Precio máx/noche</span>
+        <span>Precio max/noche</span>
         <input placeholder="Ej: 8000" type="number" formControlName="maxPrice"/>
       </label>
       <div class="form-actions">
@@ -59,14 +67,14 @@ import { firstValueFrom } from 'rxjs';
       <img class="avatar" [src]="g.avatarUrl || (g.photos && g.photos[0]) || 'https://via.placeholder.com/96'" alt="Avatar">
       <div class="info">
         <div class="header">
-          <h3 class="name">{{ g.name || ('Guardián ' + g.id) }}</h3>
+          <h3 class="name">{{ g.name || ('Guardian ' + g.id) }}</h3>
           <span class="badge price">&#36;{{ g.pricePerNight }}/noche</span>
         </div>
         <p class="city">{{ g.city }}</p>
         <p class="bio">{{ g.bio }}</p>
         <div class="chips">
           <span class="chip">Rating: {{ sum(g.id).avg }}/5 ({{ sum(g.id).count }})</span>
-          <span class="chip" [class.ok]="isAvail(g.id)">{{ isAvail(g.id) ? 'Disponible ✓' : 'No disponible' }}</span>
+          <span class="chip" [class.ok]="isAvail(g.id)">{{ isAvail(g.id) ? 'Disponible' : 'No disponible' }}</span>
         </div>
         <div class="actions">
           <a class="btn" [routerLink]="['/guardians', 'profile', g.id]"
@@ -116,7 +124,7 @@ import { firstValueFrom } from 'rxjs';
     .city{ margin:0; color:#6b7280 }
     .bio{ margin:0 }
     .chips{ display:flex; gap:8px; flex-wrap:wrap }
-    /* Oculta etiqueta de disponibilidad para evitar confusión */
+    /* Oculta etiqueta de disponibilidad para evitar confusion */
     .chips .chip + .chip{ display:none }
     .chip{ padding:2px 10px; border-radius:999px; border:1px solid #e5e7eb; background:#f8fafc; font-size:.85rem; color:#334155 }
     .chip.ok{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46 }
@@ -183,6 +191,14 @@ export class GuardianSearchPage {
     }
   }
 
+  
+  /*
+  ############################################
+  Name: search
+  Objetive: Execute the search workflow.
+  Extra info: Coordinates asynchronous calls with state updates and error handling.
+  ############################################
+  */
   async search(){
     this.error.set(null);
     const f = this.filters.getRawValue();
@@ -193,9 +209,9 @@ export class GuardianSearchPage {
     const pet = this.pets().find(p => String(p.id) === String(f.petId));
     const base = await this.guardians.search({ city: f.city, maxPrice: f.maxPrice });
     const prelim = (base || [])
-      // Compatibilidad por TIPO de mascota (sin forzar tamaño)
+      // Compatibilidad por TIPO de mascota (sin forzar tamano)
       .filter(g => pet ? (g.acceptedTypes || []).includes(pet.type as any) : true)
-      // Precio: menor estrictamente al máximo
+      // Precio: menor estrictamente al maximo
       .filter(g => {
         const maxOk = !f.maxPrice || (g.pricePerNight || 0) <= Number(f.maxPrice);
         const q = this.foldCity(f.city || '');
@@ -209,26 +225,23 @@ export class GuardianSearchPage {
     const availability: Record<string, boolean> = {};
     for (const g of prelim){
       try {
-        const endExcl = this.addDays(String(f.end), 1);
+        const checks = prelim.map(async g => {
+          const ok = await firstValueFrom(
+            this.availability.hasCoverageForRange({
+              guardianId: g.id,
+              startDay: String(f.start),
+              endDayExcl: String(f.end),
+              petCount: 1
+            })
+          );
+          const collide = await firstValueFrom(
+            this.bookings.hasOccupiedCollision(g.id, { start: String(f.start), end: String(f.end) })
+          );
+          availability[g.id] = ok && !collide;
+        });
+        await Promise.all(checks);
+        this.availMap.set(availability);
 
-        const ok = await firstValueFrom(
-          this.availability.hasCoverageForRange({
-            guardianId: g.id,
-            startDay: String(f.start),
-            endDayExcl: endExcl,     
-            petCount: 1
-          })
-        );
-
-        // Extra guardado: sin reservas ocupadas en el rango
-        const collide = await firstValueFrom(
-          this.bookings.hasOccupiedCollision(g.id, {
-            start: String(f.start),
-            end: endExcl           
-          })
-        );
-
-        availability[g.id] = !!ok && !collide;
       } catch {
         availability[g.id] = false;
       }
@@ -244,10 +257,10 @@ export class GuardianSearchPage {
     const onlyAvail = sorted.filter(g => availability[g.id]);
 
     this.availMap.set(availability);
-    // Mostrar resultados aunque ninguno esté disponible; el chip indica el estado
-    // Solo mostrar error si no hay resultados tras filtros básicos
+    // Mostrar resultados aunque ninguno este disponible; el chip indica el estado
+    // Solo mostrar error si no hay resultados tras filtros basicos
     if (!onlyAvail.length) {
-      this.error.set('No hay guardianes disponibles para ese período.');
+      this.error.set('No hay guardianes disponibles para ese periodo.');
     } else {
       this.error.set(null);
     }

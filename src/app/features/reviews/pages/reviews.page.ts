@@ -7,6 +7,14 @@ import { AvatarComponent } from '@shared/ui';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@core/auth';
 import { formatRelative } from '@shared/utils';
+/*
+############################################
+Name: ReviewsPage
+Objetive: Drive the reviews page experience.
+Extra info: Coordinates routing context, data retrieval, and user actions.
+############################################
+*/
+
 
 @Component({
   selector: 'ph-reviews',
@@ -15,35 +23,35 @@ import { formatRelative } from '@shared/utils';
   template: `
     <section class="card reviews">
       <header class="head">
-        <h2 id="reviews-title">Reseñas</h2>
+        <h2 id="reviews-title">Resenas</h2>
         <div class="summary" *ngIf="summary() as s">
-          <ph-rating [value]="s.avg" [readonly]="true" [showValue]="true" ariaLabel="Promedio de calificación"></ph-rating>
-          <span class="count">({{ s.count }} reseñas)</span>
-          <button class="btn link" type="button" (click)="toggleForm()" *ngIf="canReview().allowed">Escribir reseña</button>
+          <ph-rating [value]="s.avg" [readonly]="true" [showValue]="true" ariaLabel="Promedio de calificacion"></ph-rating>
+          <span class="count">({{ s.count }} resenas)</span>
+          <button class="btn link" type="button" (click)="toggleForm()" *ngIf="canReview().allowed">Escribir resena</button>
         </div>
       </header>
 
       <form *ngIf="formOpen()" class="review-form" (ngSubmit)="submit()" aria-labelledby="reviews-title">
         <label class="row">
-          <span class="lbl">Tu calificación</span>
-          <ph-rating [(value)]="form.rating" ariaLabel="Seleccionar calificación" [showValue]="true"></ph-rating>
+          <span class="lbl">Tu calificacion</span>
+          <ph-rating [(value)]="form.rating" ariaLabel="Seleccionar calificacion" [showValue]="true"></ph-rating>
         </label>
         <label class="row">
           <span class="lbl">Reserva</span>
           <select [(ngModel)]="form.bookingId" name="bookingId" required>
-            <option value="" disabled selected>Elegí la reserva</option>
+            <option value="" disabled selected>Elegi la reserva</option>
             <option *ngFor="let id of canReview().pendingBookings" [value]="id">{{ id }}</option>
           </select>
         </label>
         <label class="row">
           <span class="lbl">Comentario</span>
-          <textarea [(ngModel)]="form.comment" name="comment" rows="3" placeholder="¿Cómo fue tu experiencia?" maxlength="600"></textarea>
+          <textarea [(ngModel)]="form.comment" name="comment" rows="3" placeholder="?Como fue tu experiencia?" maxlength="600"></textarea>
         </label>
         <div class="actions">
           <button class="btn" type="button" (click)="toggleForm()">Cancelar</button>
           <button class="btn primary" type="submit" [disabled]="!formValid()">Publicar</button>
         </div>
-        <p class="muted">Puedes editar o borrar tu reseña durante 15 minutos.</p>
+        <p class="muted">Puedes editar o borrar tu resena durante 15 minutos.</p>
         <p class="error" *ngIf="error()">{{ error() }}</p>
       </form>
 
@@ -51,7 +59,7 @@ import { formatRelative } from '@shared/utils';
         <li *ngFor="let r of pagedReviews()" class="item">
           <div class="meta">
             <app-avatar size="sm" [src]="ownerAvatar(r.ownerId)" [name]="'Owner ' + r.ownerId"></app-avatar>
-            <ph-rating [value]="r.rating" [readonly]="true" ariaLabel="Calificación"></ph-rating>
+            <ph-rating [value]="r.rating" [readonly]="true" ariaLabel="Calificacion"></ph-rating>
             <span class="time">{{ rel(r.createdAt) }}</span>
           </div>
           <p class="comment" *ngIf="r.comment">{{ r.comment }}</p>
@@ -62,7 +70,7 @@ import { formatRelative } from '@shared/utils';
         </li>
       </ul>
       <div class="more" *ngIf="hasMore()">
-        <button class="btn" type="button" (click)="loadMore()">Ver más</button>
+        <button class="btn" type="button" (click)="loadMore()">Ver mas</button>
       </div>
     </section>
   `,
@@ -89,7 +97,7 @@ import { formatRelative } from '@shared/utils';
     .meta{ display:flex; align-items:center; gap:8px; color:#6b7280 }
     .comment{ margin:8px 0 0 }
     .more{ display:flex; justify-content:center; margin-top:12px }
-    /* Fuerza estilo claro en reseñas para mejor legibilidad */
+    /* Fuerza estilo claro en resenas para mejor legibilidad */
     @media (prefers-color-scheme: dark){ .reviews{ background:#fff !important; color:#111827 } }
   `]
 })
@@ -113,7 +121,7 @@ export class ReviewsPage implements OnInit {
 
   ngOnInit(){
     if (!this.guardianId) {
-      // Fallback si se usara vía ruta separada (no requerido por ahora)
+      // Fallback si se usara via ruta separada (no requerido por ahora)
     }
     this.reviews.refresh(this.guardianId).subscribe();
   }
@@ -131,10 +139,10 @@ export class ReviewsPage implements OnInit {
   submit(){
     this.error.set(null);
     const user = this.auth.user();
-    if (!user || user.id == null) { this.error.set('Debes iniciar sesión.'); return; }
+    if (!user || user.id == null) { this.error.set('Debes iniciar sesion.'); return; }
     const can = this.canReview();
-    if (!can.allowed) { this.error.set('No puedes reseñar este perfil.'); return; }
-    if (!can.pendingBookings.includes(this.form.bookingId)) { this.error.set('La reserva seleccionada no es válida.'); return; }
+    if (!can.allowed) { this.error.set('No puedes resenar este perfil.'); return; }
+    if (!can.pendingBookings.includes(this.form.bookingId)) { this.error.set('La reserva seleccionada no es valida.'); return; }
 
     const payload: Partial<Review> = {
       guardianId: this.guardianId,
@@ -164,7 +172,7 @@ export class ReviewsPage implements OnInit {
   }
 
   startEdit(r: Review){
-    // Edición mínima: reabrir form con datos (mantener bookingId bloqueado)
+    // Edicion minima: reabrir form con datos (mantener bookingId bloqueado)
     this.formOpen.set(true);
     this.form = { rating: r.rating, comment: r.comment || '', bookingId: r.bookingId };
     // Guardado como update no implementado desde formulario por simplicidad.
