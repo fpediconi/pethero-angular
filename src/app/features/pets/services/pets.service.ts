@@ -13,7 +13,7 @@ Extra info: Wraps API access, caching, and shared business rules.
 @Injectable({ providedIn: 'root' })
 export class PetsService {
   private api = inject(ApiService);
-  list(ownerId: string){ return this.api.get<Pet[]>('/pets', { ownerId }); }
+  list(){ return this.api.get<Pet[]>('/pets'); }
   create(pet: Partial<Pet>){ return this.api.post<Pet>('/pets', pet); }
   delete(id: string | number){ return this.api.delete<void>(`/pets/${id}`); }
 }

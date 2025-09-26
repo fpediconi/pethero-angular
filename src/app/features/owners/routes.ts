@@ -3,7 +3,7 @@ import { authGuard, ownerGuard } from '@core/auth';
 import { PetsPage } from '@features/owners/pages';
 
 export const OWNERS_ROUTES: Routes = [
-  { path: 'pets', component: PetsPage },
+  { path: 'pets', canActivate: [authGuard, ownerGuard], component: PetsPage },
   {
     path: 'favorites',
     canActivate: [authGuard, ownerGuard],
@@ -11,7 +11,7 @@ export const OWNERS_ROUTES: Routes = [
   },
   {
     path: 'profile/:id',
-    canActivate: [authGuard],
+    canActivate: [authGuard, ownerGuard],
     loadComponent: () => import('@features/owners/pages/owner-profile.page').then(m => m.OwnerProfilePage),
   },
 ];

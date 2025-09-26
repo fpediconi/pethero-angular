@@ -1,82 +1,195 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { User } from '@shared/models';
-import { map, tap } from 'rxjs/operators';
-import { Observable } from 'rxjs';
-/*
-############################################
-Name: AuthService
-Objetive: Provide auth domain operations.
-Extra info: Wraps API access, caching, and shared business rules.
-############################################
-*/
+import { Observable, of } from 'rxjs';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 
+interface AuthSessionResponse {
+  token?: string | null;
+  accessToken?: string | null;
+  user?: User | null;
+  [key: string]: any;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private _user = signal<User | null>(null);
-  user = this._user;
-
   private http = inject(HttpClient);
   private api = environment.apiBaseUrl;
 
-  constructor(){
-    // Restaurar sesion si existe en sessionStorage
-    try {
-      const token = sessionStorage.getItem('pethero_token');
-      const rawUser = sessionStorage.getItem('pethero_user');
-      if (token && rawUser) {
-        this._user.set(JSON.parse(rawUser) as User);
-      }
-    } catch { /* no-op */ }
+  private readonly tokenKey = 'pethero_token';
+  private _user = signal<User | null>(null);
+  user = this._user.asReadonly();
+
+  private _token = signal<string | null>(null);
+  private inflightSession: Observable<User | null> | null = null;
+
+  constructor() {
+    const stored = this.readStoredToken();
+    if (stored) {
+      this._token.set(stored);
+      this.loadSession().subscribe({
+        next: () => {},
+        error: () => {},
+      });
+    }
   }
 
-  // Login real contra backend/mock (json-server): /users?email=..&password=..
   login(email: string, password: string): Observable<User> {
-    const params = new HttpParams().set('email', email).set('password', password);
-    return this.http.get<User[]>(`${this.api}/users`, { params }).pipe(
-      map(users => {
-        const user = users[0];
-        if (!user) throw new Error('Credenciales invalidas');
-        return user;
-      }),
-      tap(user => this.persistSession(user))
-    );
+    return this.http
+      .post<AuthSessionResponse>(`${this.api}/auth/login`, { email, password })
+      .pipe(
+        tap((res) => {
+          const token = this.extractToken(res);
+          this.persistSession(res.user ?? null, token);
+        }),
+        map((res) => {
+          const user = res.user;
+          if (!user) {
+            throw new Error('Respuesta de autenticacion invalida');
+          }
+          return user;
+        })
+      );
   }
 
-  // Registro: crea el usuario en /users. La creacion de Profile se maneja fuera (ProfileService)
   register(payload: { email: string; password: string; role: User['role'] }): Observable<User> {
-    const body: User = {
-      email: payload.email,
-      password: payload.password,
-      role: payload.role,
-      createdAt: new Date().toISOString(),
-    } as User;
-    return this.http.post<User>(`${this.api}/users`, body).pipe(
-      tap(user => this.persistSession(user))
-    );
+    return this.http
+      .post<AuthSessionResponse>(`${this.api}/auth/register`, payload)
+      .pipe(
+        tap((res) => {
+          const token = this.extractToken(res);
+          this.persistSession(res.user ?? null, token);
+        }),
+        map((res) => {
+          const user = res.user;
+          if (!user) {
+            throw new Error('No se pudo registrar el usuario.');
+          }
+          return user;
+        })
+      );
   }
 
-  // Expone una forma segura de persistir la sesion desde componentes que completen datos
-  persistSession(user: User) {
-    try {
-      sessionStorage.setItem('pethero_token', `mock-${user.id}`);
-      sessionStorage.setItem('pethero_user', JSON.stringify(user));
-      this._user.set(user);
-    } catch { /* no-op */ }
+  persistSession(user: User | null, token?: string | null) {
+    if (token != null) {
+      this.storeToken(token);
+    }
+    this._user.set(user);
   }
 
-  isLoggedIn(){ return !!this._user(); }
+  isLoggedIn() {
+    return !!this._user();
+  }
 
-  logout(){
+  hasToken() {
+    return !!this._token();
+  }
+
+  token() {
+    return this._token();
+  }
+
+  loadSession(force = false): Observable<User | null> {
+    if (!this.hasToken()) {
+      this.clearSession();
+      return of(null);
+    }
+
+    if (!force) {
+      const current = this._user();
+      if (current) {
+        return of(current);
+      }
+      if (this.inflightSession) {
+        return this.inflightSession;
+      }
+    }
+
+    const request = this.http
+      .get<User | { user?: User | null } | null>(`${this.api}/auth/me`)
+      .pipe(
+        map((payload) => {
+          if (!payload) {
+            return null;
+          }
+          if (typeof payload === 'object' && 'user' in payload) {
+            const nested = (payload as { user?: User | null }).user;
+            return nested ?? null;
+          }
+          return payload as User;
+        }),
+        tap((user) => this.persistSession(user ?? null)),
+        catchError(() => {
+          this.clearSession();
+          return of(null);
+        }),
+        finalize(() => {
+          this.inflightSession = null;
+        }),
+        shareReplay(1)
+      );
+    this.inflightSession = request;
+    return request;
+  }
+
+  logout(options: { redirect?: boolean } = {}) {
+    const redirect = options.redirect !== false;
+    const finish = () => {
+      this.clearSession();
+      if (redirect && typeof location !== 'undefined') {
+        location.assign('/auth/login');
+      }
+    };
+
+    if (!this.hasToken()) {
+      finish();
+      return;
+    }
+
+    this.http.post(`${this.api}/auth/logout`, {}).pipe(catchError(() => of(null))).subscribe({
+      next: () => finish(),
+      error: () => finish(),
+    });
+  }
+
+  updateCurrentUser(patch: Partial<User>) {
+    const current = this._user();
+    if (!current) {
+      return;
+    }
+    this._user.set({ ...current, ...patch });
+  }
+
+  private extractToken(res: AuthSessionResponse): string | null {
+    const token = res.token || res.accessToken;
+    return token ?? null;
+  }
+
+  private clearSession() {
+    this.storeToken(null);
+    this._user.set(null);
+    this.inflightSession = null;
+  }
+
+  private readStoredToken(): string | null {
     try {
-      sessionStorage.removeItem('pethero_token');
-      sessionStorage.removeItem('pethero_user');
-    } finally {
-      this._user.set(null);
-      location.assign('/');
+      return sessionStorage.getItem(this.tokenKey);
+    } catch {
+      return null;
+    }
+  }
+
+  private storeToken(token: string | null) {
+    this._token.set(token ?? null);
+    try {
+      if (token) {
+        sessionStorage.setItem(this.tokenKey, token);
+      } else {
+        sessionStorage.removeItem(this.tokenKey);
+      }
+    } catch {
+      /* no-op */
     }
   }
 }
-

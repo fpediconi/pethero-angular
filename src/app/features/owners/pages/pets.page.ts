@@ -177,13 +177,13 @@ export class PetsPage {
 
   ownerKey = computed(() => {
     const u = this.auth.user();
-    // En el mock, ownerId es una string tipo "u1"
-    return u?.id != null ? `u${u.id}` : 'u0';
+    return u?.id != null ? String(u.id) : '';
   });
 
   ngOnInit(){
     const ownerId = this.ownerKey();
-    this.service.list(ownerId).subscribe(p => this.pets.set(p || []));
+    if (!ownerId) return;
+    this.service.list().subscribe(p => this.pets.set(p || []));
   }
 
   mapType(t: PetType){ return t === 'DOG' ? 'Perro' : 'Gato'; }
@@ -209,9 +209,11 @@ export class PetsPage {
   create(){
     if (this.form.invalid || this.creating) return;
     this.creating = true;
+    const ownerId = this.ownerKey();
+    if (!ownerId) { this.creating = false; return; }
     const payload: Partial<Pet> = {
       ...this.sanitize(this.form.getRawValue()),
-      ownerId: this.ownerKey(),
+      ownerId,
     } as Partial<Pet>;
     this.service.create(payload).subscribe({
       next: (created) => {

@@ -178,18 +178,31 @@ export class GuardianSearchPage {
       .replace(/\s+/g, ' ');             // colapsa espacios
   }
   
-  ngOnInit(){
-    const user = this.auth.user();
-    if (user?.role === 'owner' && user.id != null) {
-      const ownerKey = `u${user.id}`;
-      this.petsService.list(ownerKey).subscribe(p => {
-        const arr = p || [];
+  ngOnInit() {
+  const user = this.auth.user();
+
+  if (user?.role === 'owner') {
+    this.petsService.list().subscribe({
+      next: (pets) => {
+        const arr = pets ?? [];
         this.pets.set(arr);
-        if (arr.length === 1) this.filters.patchValue({ petId: String(arr[0].id) });
-      });
-      this.favorites.ensureLoaded().subscribe();
-    }
+
+        if (arr.length === 1) {
+          this.filters.patchValue({ petId: String(arr[0].id) });
+        }
+      },
+      error: () => {
+        this.pets.set([]);
+      }
+    });
+
+    this.favorites.ensureLoaded().subscribe();
+  } else {
+    // Si es guardián, no pegamos a /pets
+    this.pets.set([]);
   }
+}
+
 
   
   /*

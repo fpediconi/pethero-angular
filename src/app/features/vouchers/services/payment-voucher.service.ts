@@ -41,6 +41,10 @@ export class PaymentVoucherService {
     const t = Number(total || 0);
     return Math.round(t * 0.5);
   }
+  private computeDueDate(){
+    return new Date(Date.now() + this.DUE_HOURS * 60 * 60 * 1000).toISOString();
+  }
+
 
   // Ensure a voucher exists for an accepted booking. Does not duplicate active ISSUED vouchers.
   
@@ -80,21 +84,17 @@ export class PaymentVoucherService {
   }
 
   private createVoucher(booking: Booking): Observable<PaymentVoucher> {
-    const id = Math.random().toString(36).slice(2);
-    const due = new Date(Date.now() + this.DUE_HOURS * 60 * 60 * 1000).toISOString();
-    const voucher: PaymentVoucher = {
-      id,
+    const payload = {
       bookingId: booking.id,
       amount: this.halfAmount(booking.totalPrice),
-      dueDate: due,
-      status: 'ISSUED',
-      createdAt: new Date().toISOString(),
-    };
-    return this.api.post<PaymentVoucher>('/paymentVouchers', voucher).pipe(
-      tap(v => this.setCache(booking.id, v))
+      dueDate: this.computeDueDate(),
+      status: 'ISSUED' as const,
+    } as Partial<PaymentVoucher>;
+
+    return this.api.post<PaymentVoucher>('/paymentVouchers', payload).pipe(
+      tap((v) => this.setCache(booking.id, v))
     );
   }
-
   markPaid(voucherId: string): Observable<PaymentVoucher> {
     return this.api.get<PaymentVoucher>(`/paymentVouchers/${voucherId}`).pipe(
       switchMap(v => this.api.put<PaymentVoucher>(`/paymentVouchers/${voucherId}`, { ...v, status: 'PAID' })),
@@ -131,5 +131,6 @@ export class PaymentVoucherService {
     );
   }
 }
+
 
 

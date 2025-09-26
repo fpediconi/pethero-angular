@@ -7,6 +7,7 @@ import { Pet } from '@features/pets/models';
 import { GuardianProfile } from '@features/guardians/models';
 import { validRange } from '@shared/utils';
 import { PetsService } from '@features/pets/services';
+import { AuthService } from '@core/auth';
 /*
 ############################################
 Name: BookingRequestPage
@@ -39,6 +40,7 @@ export class BookingRequestPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private petsService = inject(PetsService);
+  private auth = inject(AuthService);
 
   pets = signal<Pet[]>([]);
   submitting = signal(false);
@@ -72,7 +74,6 @@ export class BookingRequestPage {
 
   cancel(){ this.router.navigateByUrl('/guardians/search'); }
 
-  
   /*
   ############################################
   Name: ngOnInit
@@ -90,16 +91,29 @@ export class BookingRequestPage {
     this.petId.set(petId);
 
     this.guardians.getProfile(this.guardianId).subscribe(p => this.guardian.set(p));
-    // Try to materialize the pet info for confirmation display
-    const ownerId = sessionStorage.getItem('pethero_user') ? JSON.parse(sessionStorage.getItem('pethero_user')!).id : null;
-    if (ownerId != null) {
-      const ownerKey = `u${ownerId}`;
-      this.petsService.list(String(ownerKey)).subscribe(list => {
-        this.pets.set(list || []);
-        const found = (list || []).find(x => String(x.id) === String(petId));
-        if (found) this.pet.set(found);
+
+    const currentUser = this.auth.user();
+    if (currentUser?.id != null) {
+      this.loadPetsForOwner(currentUser.id);
+    } else if (this.auth.hasToken()) {
+      this.auth.loadSession().subscribe(user => {
+        if (user?.id != null) {
+          this.loadPetsForOwner(user.id);
+        }
       });
     }
   }
-}
 
+  private loadPetsForOwner(ownerId: number | string){
+    const key = String(ownerId);
+    if (!key) return;
+    this.petsService.list().subscribe(list => {
+      const result = list || [];
+      this.pets.set(result);
+      const selected = result.find(x => String(x.id) === String(this.petId()));
+      if (selected) {
+        this.pet.set(selected);
+      }
+    });
+  }
+}

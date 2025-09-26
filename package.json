@@ -10,6 +10,7 @@
     "mock": "json-server --watch mock/db.json --port 3000",
     "start:mock": "concurrently \"npm:mock\" \"ng serve\"",
     "start:api": "dotnet run --project ../pethero-api/PetHero.Api/PetHero.Api.csproj",
+    "start:build": "dotnet build --project ../pethero-api/PetHero.Api/PetHero.Api.csproj",
     "dev": "concurrently \"npm run start:api\" \"ng serve\""
   },
   "dependencies": {

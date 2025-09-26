@@ -135,9 +135,9 @@ export class RegisterComponent implements OnInit {
             .create({ userId: user.id!, displayName: displayName! })
             .pipe(
               switchMap((profile) => {
-                user.profileId = profile.id;
-                this.auth.persistSession(user);
-                return of({ user, role: role as UserRole });
+                const enriched = { ...user, profileId: profile.id };
+                this.auth.persistSession(enriched);
+                return of({ user: enriched, role: role as UserRole });
               }),
             );
         }),
@@ -160,4 +160,3 @@ export class RegisterComponent implements OnInit {
       });
   }
 }
-

@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { ApiService } from '@core/http';
 import { Booking, BookingStatus } from '@features/bookings/models';
 import { PaymentVoucher } from '@features/vouchers/models';
@@ -10,7 +10,8 @@ import { daysBetween, overlaps, validRange } from '@shared/utils';
 import { NotificationsService } from '@core/notifications';
 import { AvailabilityService } from '@features/guardians/services';
 import { covers, overlap as overlapExclusive } from '@core/utils';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, Subscription } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { PaymentVoucherService } from '@features/vouchers/services';
 
 
@@ -67,30 +68,64 @@ export class BookingsService {
   private profileNameRequests = new Map<string, Promise<string>>();
 
   private _bookings = signal<Booking[]>([]);
-  bookings = this._bookings;
+  bookings = this._bookings.asReadonly();
+  private activeScope: { role: 'owner' | 'guardian'; userId: string } | null = null;
+  private reloadSub: Subscription | null = null;
 
   constructor(){
-    // Load from mock API so both users share the same data
-    this.api.get<Booking[]>('/bookings').subscribe(list => {
-      this._bookings.set(list || []);
-      this.persist();
+    effect(() => {
+      const user = this.auth.user();
+      if (!user || user.id == null) {
+        this.teardownReloadSubscription();
+        this.activeScope = null;
+        this._bookings.set([]);
+        return;
+      }
+      this.reload();
     });
-    // Light polling to keep sessions in sync across tabs/users
-    setInterval(() => {
-      this.api.get<Booking[]>('/bookings').subscribe(list => {
-        const curr = JSON.stringify(this._bookings());
-        const next = JSON.stringify(list || []);
-        if (curr !== next) this._bookings.set(list || []);
-      });
-    }, 4000);
-  }
-
-  private persist(){
-    try { localStorage.setItem('pethero_bookings', JSON.stringify(this._bookings())); } catch { /* no-op */ }
   }
 
   reload(){
-    return this.api.get<Booking[]>('/bookings').subscribe(list => this._bookings.set(list || []));
+    const user = this.auth.user();
+    if (!user || user.id == null) {
+      this.teardownReloadSubscription();
+      this.activeScope = null;
+      this._bookings.set([]);
+      return;
+    }
+
+    const scope = { role: user.role, userId: String(user.id) } as const;
+    this.activeScope = scope;
+
+    const params = scope.role === 'owner'
+      ? { ownerId: scope.userId }
+      : { guardianId: scope.userId };
+
+    this.teardownReloadSubscription();
+    this.reloadSub = this.api.get<Booking[]>('/bookings', params).subscribe({
+      next: (list) => {
+        if (this.isActiveScope(scope)) {
+          this._bookings.set(list || []);
+        }
+      },
+      error: () => {
+        if (this.isActiveScope(scope)) {
+          this._bookings.set([]);
+        }
+      },
+    });
+    return this.reloadSub;
+  }
+
+  private teardownReloadSubscription(){
+    if (this.reloadSub) {
+      this.reloadSub.unsubscribe();
+      this.reloadSub = null;
+    }
+  }
+
+  private isActiveScope(scope: { role: 'owner' | 'guardian'; userId: string }){
+    return !!this.activeScope && this.activeScope.role === scope.role && this.activeScope.userId === scope.userId;
   }
 
   // Owner queries
@@ -127,11 +162,16 @@ export class BookingsService {
 
   // Helper: collision with occupied bookings using [start,end) semantics
   hasOccupiedCollision(guardianId: string, range: { start: string; end: string }){
-    // Consider only currently occupying or future-committed bookings
     const blocked: BookingStatus[] = ['ACCEPTED','CONFIRMED','IN_PROGRESS'];
-    const hit = this.listForGuardian(guardianId).some(b => blocked.includes(b.status) && overlapExclusive(b.start, b.end, range.start, range.end));
-    return of(hit);
+    return this.api.get<Booking[]>('/bookings', { guardianId }).pipe(
+      map((list) => {
+        const bookings = list || [];
+        return bookings.some((b) => blocked.includes(b.status) && overlapExclusive(b.start, b.end, range.start, range.end));
+      }),
+      catchError(() => of(false))
+    );
   }
+
 
   // Create request
   
@@ -148,60 +188,53 @@ export class BookingsService {
     const user = this.auth.user();
     if (!user) throw new Error('Debe iniciar sesion para reservar.');
 
-    if (!this.isGuardianAvailable(payload.guardian.id, payload.start, payload.end)) {
-      throw new Error('El guardian no esta disponible en ese periodo.');
-    }
     if (!this.isOwnerFree(String(user.id), payload.start, payload.end)) {
       throw new Error('Ya tiene una reserva que se superpone en ese periodo.');
     }
 
-    // Validacion adicional: colisiones y cobertura por disponibilidad
-    const _collide = await firstValueFrom(this.hasOccupiedCollision(payload.guardian.id, { start: payload.start, end: payload.end }));
-    if (_collide) throw new Error('El guardian tiene reservas que se superponen en ese periodo.');
-    const _slots = await firstValueFrom(this.availability.listByGuardian(payload.guardian.id));
-    const _covers = (_slots || []).some(s => covers(s.startDate, s.endDate, payload.start, payload.end));
-    if (!_covers) throw new Error('El guardian no tiene disponibilidad para esas fechas.');
+    const collision = await firstValueFrom(this.hasOccupiedCollision(payload.guardian.id, { start: payload.start, end: payload.end }));
+    if (collision) throw new Error('El guardian tiene reservas que se superponen en ese periodo.');
+    const coverage = await firstValueFrom(this.availability.listByGuardian(payload.guardian.id));
+    const hasCoverage = (coverage || []).some((slot) => covers(slot.startDate, slot.endDate, payload.start, payload.end));
+    if (!hasCoverage) throw new Error('El guardian no tiene disponibilidad para esas fechas.');
 
     const nights = daysBetween(payload.start, payload.end) || 1;
     const total = nights * (payload.guardian.pricePerNight || 0);
-    const booking: Booking = {
-      id: Math.random().toString(36).slice(2),
+
+    const body = {
       ownerId: String(user.id),
       guardianId: payload.guardian.id,
       petId: String(payload.petId),
       start: payload.start,
       end: payload.end,
       status: 'REQUESTED',
-      depositPaid: false,
       totalPrice: total,
-      createdAt: new Date().toISOString(),
-    };
+    } as Partial<Booking>;
 
-    return await new Promise<Booking>((resolve, reject) => {
-      this.api.post<Booking>('/bookings', booking).subscribe({
-        next: (saved) => {
-          this._bookings.set([saved, ...this._bookings()]);
-          this.persist();
-          this.notifications.notify(payload.guardian.id, `Nueva solicitud de reserva del usuario ${user.id} (${payload.start} - ${payload.end})`);
-          resolve(saved);
-        },
-        error: (e) => reject(e)
-      });
-    });
+    const saved = await firstValueFrom(this.api.post<Booking>('/bookings', body));
+    this.addBookingEntry(saved);
+    this.notifications.notify(payload.guardian.id, `Nueva solicitud de reserva del usuario ${user.id} (${payload.start} - ${payload.end})`);
+    return saved;
   }
 
   // Owner actions
   cancel(bookingId: string){
-    const b = this._bookings().find(x => x.id === bookingId);
-    this._update(bookingId, { status: 'CANCELLED' });
-    // Void voucher if present and not paid
-    if (b) this.vouchers.voidByBooking(b.id).subscribe();
-    if (b) this.notifications.notify(b.guardianId, `Reserva cancelada por el dueno (${b.start} - ${b.end}).`);
+    const booking = this.findOwnedBooking(bookingId);
+    if (!booking) {
+      console.warn('[BookingsService] cancel: booking not found', bookingId);
+      return;
+    }
+    this.applyBookingUpdate(booking, { status: 'CANCELLED' }, (saved) => {
+      this.vouchers.voidByBooking(saved.id).subscribe();
+      this.notifications.notify(saved.guardianId, `Reserva cancelada por el dueno (${saved.start} - ${saved.end}).`);
+    });
   }
   async pay(bookingId: string): Promise<PaymentVoucher | null> {
-    const booking = this._bookings().find(x => x.id === bookingId);
-    if (!booking) return null;
-
+    const booking = this.findOwnedBooking(bookingId);
+    if (!booking) {
+      console.warn('[BookingsService] pay: booking not found', bookingId);
+      return null;
+    }
     try {
       let voucher = await firstValueFrom(this.vouchers.getByBookingId(booking.id));
       if (!voucher || voucher.status === 'EXPIRED' || voucher.status === 'VOID') {
@@ -211,9 +244,10 @@ export class BookingsService {
       if (voucher.status !== 'PAID') {
         voucher = await firstValueFrom(this.vouchers.markPaid(voucher.id));
       }
-
-      this._update(bookingId, { depositPaid: true, status: 'CONFIRMED' });
-      this.notifications.notify(booking.guardianId, `Reserva pagada. (${booking.start} - ${booking.end}).`);
+      const payload = { ...booking, depositPaid: true, status: 'CONFIRMED' as BookingStatus };
+      const saved = await firstValueFrom(this.api.put<Booking>(`/bookings/${booking.id}`, payload));
+      this.replaceBooking(saved);
+      this.notifications.notify(saved.guardianId, `Reserva pagada. (${saved.start} - ${saved.end}).`);
       return voucher;
     } catch (error) {
       console.error('[BookingsService] pay failed', error);
@@ -223,33 +257,46 @@ export class BookingsService {
 
   // Guardian actions
   accept(bookingId: string){
-    const b = this._bookings().find(x => x.id === bookingId);
-    if (!b) return;
-    if (!this.isGuardianAvailable(b.guardianId, b.start, b.end)) {
+    const booking = this.findGuardianBooking(bookingId);
+    if (!booking) {
+      console.warn('[BookingsService] accept: booking not found', bookingId);
+      return;
+    }
+    if (!this.isGuardianAvailable(booking.guardianId, booking.start, booking.end)) {
       throw new Error('No puede aceptar dos reservas superpuestas.');
     }
-    // Cobertura por disponibilidad (best-effort con cache local)
     try {
       const slots = this.availability.slotsSig() || [];
-      const covered = (slots || []).some(s => s.guardianId === b.guardianId && covers(s.startDate, s.endDate, b.start, b.end));
+      const covered = (slots || []).some((s) => s.guardianId === booking.guardianId && covers(s.startDate, s.endDate, booking.start, booking.end));
       if (!covered) throw new Error('No hay disponibilidad para cubrir esas fechas.');
-    } catch {}
-    this._update(bookingId, { status: 'ACCEPTED' });
-    // Issue voucher upon acceptance (best-effort)
-    this.vouchers.issueForBooking(b).subscribe();
-    this.notifications.notify(b.ownerId, `Tu solicitud fue aceptada por el guardian (${b.start} - ${b.end}).`);
+    } catch (error) {
+      console.error('[BookingsService] accept availability check failed', error);
+    }
+    this.applyBookingUpdate(booking, { status: 'ACCEPTED' }, (saved) => {
+      this.vouchers.issueForBooking(saved).subscribe();
+      this.notifications.notify(saved.ownerId, `Tu solicitud fue aceptada por el guardian (${saved.start} - ${saved.end}).`);
+    });
   }
   reject(bookingId: string){
-    const b = this._bookings().find(x => x.id === bookingId);
-    this._update(bookingId, { status: 'REJECTED' });
-    if (b) this.notifications.notify(b.ownerId, `Tu solicitud fue rechazada por el guardian.`);
+    const booking = this.findGuardianBooking(bookingId);
+    if (!booking) {
+      console.warn('[BookingsService] reject: booking not found', bookingId);
+      return;
+    }
+    this.applyBookingUpdate(booking, { status: 'REJECTED' }, (saved) => {
+      this.notifications.notify(saved.ownerId, 'Tu solicitud fue rechazada por el guardian.');
+    });
   }
   finalize(bookingId: string){
-    const b = this._bookings().find(x => x.id === bookingId);
-    this._update(bookingId, { status: 'COMPLETED' });
-    if (b) this.notifications.notify(b.ownerId, `Reserva finalizada (${b.start} - ${b.end}).`);
+    const booking = this.findGuardianBooking(bookingId);
+    if (!booking) {
+      console.warn('[BookingsService] finalize: booking not found', bookingId);
+      return;
+    }
+    this.applyBookingUpdate(booking, { status: 'COMPLETED' }, (saved) => {
+      this.notifications.notify(saved.ownerId, `Reserva finalizada (${saved.start} - ${saved.end}).`);
+    });
   }
-
 
   async searchHistory(query: BookingHistoryQuery): Promise<BookingHistoryResult> {
     if (!query.role) throw new Error('role is required');
@@ -318,6 +365,59 @@ export class BookingsService {
   }
 
   
+  private findOwnedBooking(bookingId: string){
+    const booking = this.findBooking(bookingId);
+    const currentId = this.currentUserId();
+    if (!booking || !currentId) return null;
+    return booking.ownerId === currentId ? booking : null;
+  }
+
+  private findGuardianBooking(bookingId: string){
+    const booking = this.findBooking(bookingId);
+    const currentId = this.currentUserId();
+    if (!booking || !currentId) return null;
+    return booking.guardianId === currentId ? booking : null;
+  }
+
+  private findBooking(bookingId: string){
+    return this._bookings().find((b) => String(b.id) === String(bookingId));
+  }
+
+  private currentUserId(){
+    const user = this.auth.user();
+    return user?.id != null ? String(user.id) : null;
+  }
+
+  private applyBookingUpdate(booking: Booking, patch: Partial<Booking>, after?: (saved: Booking) => void){
+    const payload = { ...booking, ...patch } as Booking;
+    this.api.put<Booking>(`/bookings/${booking.id}`, payload).subscribe({
+      next: (saved) => {
+        this.replaceBooking(saved);
+        after?.(saved);
+      },
+      error: (error) => {
+        console.error('[BookingsService] update failed', error);
+      },
+    });
+  }
+
+  private replaceBooking(next: Booking){
+    this._bookings.set(this._bookings().map((b) => (b.id === next.id ? next : b)));
+  }
+
+  private addBookingEntry(booking: Booking){
+    const scope = this.activeScope;
+    if (!scope) return;
+    if (scope.role === 'owner' && booking.ownerId !== scope.userId) return;
+    if (scope.role === 'guardian' && booking.guardianId !== scope.userId) return;
+    const exists = this._bookings().some((b) => b.id === booking.id);
+    if (exists) {
+      this.replaceBooking(booking);
+    } else {
+      this._bookings.set([booking, ...this._bookings()]);
+    }
+  }
+
   /*
   ############################################
   Name: loadHistoryData
@@ -479,21 +579,4 @@ export class BookingsService {
   }
 
 
-  private _update(id: string, patch: Partial<Booking>){
-    const curr = this._bookings().find(x => x.id === id);
-    if (!curr) return;
-    const next = { ...curr, ...patch } as Booking;
-    this.api.put<Booking>(`/bookings/${id}`, next).subscribe({
-      next: (saved) => {
-        this._bookings.set(this._bookings().map(b => b.id === id ? saved : b));
-        this.persist();
-      },
-      error: () => {
-        this._bookings.set(this._bookings().map(b => b.id === id ? next : b));
-        this.persist();
-      }
-    });
-  }
 }
-
-
